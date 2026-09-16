@@ -1,6 +1,6 @@
 # Monorepo Workspace & Infra Extraction — Phase 0 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Turn the bare `apps/{website,server,adminpanel}` folders into a proper pnpm workspace with `apps/frontend` + `apps/backend` (naming convention requested by the repo owner), a single root lockfile, and one canonical `infra/` folder at the repo root (Docker, nginx, monitoring) extracted out of the backend app.
 
@@ -30,7 +30,7 @@ Canonical choice for this plan: **the `infra/docker/` versions win** (they're th
 - Rename: `apps/website/` → `apps/frontend/`
 - Rename: `apps/server/` → `apps/backend/`
 
-- [ ] **Step 1: Rename both folders**
+- [x] **Step 1: Rename both folders**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -38,7 +38,7 @@ git mv apps/website apps/frontend
 git mv apps/server apps/backend
 ```
 
-- [ ] **Step 2: Verify history followed the rename**
+- [x] **Step 2: Verify history followed the rename**
 
 Run: `git log --oneline --follow -- apps/frontend/package.json | head -3`
 Expected: shows recent website commits (e.g. the "Update" commit), not empty.
@@ -46,7 +46,7 @@ Expected: shows recent website commits (e.g. the "Update" commit), not empty.
 Run: `git log --oneline --follow -- apps/backend/package.json | head -3`
 Expected: shows recent server commits (e.g. "docs: update README...").
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A
@@ -61,7 +61,7 @@ git commit -m "chore: rename apps/website to apps/frontend, apps/server to apps/
 - Modify: `apps/frontend/package.json:2`
 - Modify: `apps/backend/package.json:2`
 
-- [ ] **Step 1: Rename frontend package name**
+- [x] **Step 1: Rename frontend package name**
 
 In `apps/frontend/package.json`, change:
 ```json
@@ -72,7 +72,7 @@ to:
   "name": "z-news-frontend",
 ```
 
-- [ ] **Step 2: Rename backend package name**
+- [x] **Step 2: Rename backend package name**
 
 In `apps/backend/package.json`, change:
 ```json
@@ -85,7 +85,7 @@ to:
 
 (The old name `"z-news"` collides with the root workspace package we're about to create — it also wasn't descriptive next to `z-news-adminpanel`/`z-news-website`.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/frontend/package.json apps/backend/package.json
@@ -102,7 +102,7 @@ git commit -m "chore: rename package.json names to z-news-frontend / z-news-back
 - Create: `.npmrc`
 - Create: `.gitignore`
 
-- [ ] **Step 1: Write the workspace manifest**
+- [x] **Step 1: Write the workspace manifest**
 
 `pnpm-workspace.yaml`:
 ```yaml
@@ -110,7 +110,7 @@ packages:
   - "apps/*"
 ```
 
-- [ ] **Step 2: Write the root package.json**
+- [x] **Step 2: Write the root package.json**
 
 `package.json`:
 ```json
@@ -129,14 +129,14 @@ packages:
 }
 ```
 
-- [ ] **Step 3: Write root .npmrc**
+- [x] **Step 3: Write root .npmrc**
 
 `.npmrc`:
 ```
 engine-strict=true
 ```
 
-- [ ] **Step 4: Write root .gitignore**
+- [x] **Step 4: Write root .gitignore**
 
 `.gitignore`:
 ```
@@ -145,7 +145,7 @@ node_modules/
 *.log
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add pnpm-workspace.yaml package.json .npmrc .gitignore
@@ -162,13 +162,13 @@ git commit -m "chore: add pnpm workspace root"
 - Delete: `apps/adminpanel/pnpm-lock.yaml`
 - Create: `pnpm-lock.yaml` (generated, repo root)
 
-- [ ] **Step 1: Remove the three per-app lockfiles**
+- [x] **Step 1: Remove the three per-app lockfiles**
 
 ```bash
 git rm apps/frontend/pnpm-lock.yaml apps/backend/pnpm-lock.yaml apps/adminpanel/pnpm-lock.yaml
 ```
 
-- [ ] **Step 2: Install from the workspace root to generate one lockfile**
+- [x] **Step 2: Install from the workspace root to generate one lockfile**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -176,7 +176,7 @@ pnpm install
 ```
 Expected: a single `pnpm-lock.yaml` appears at the repo root; `node_modules` created at root with workspace symlinks into each `apps/*`. No `ERR_PNPM_*` errors.
 
-- [ ] **Step 3: Verify each app still resolves its own deps**
+- [x] **Step 3: Verify each app still resolves its own deps**
 
 Run: `pnpm --filter z-news-frontend exec next --version`
 Expected: prints a `15.x` version.
@@ -184,7 +184,7 @@ Expected: prints a `15.x` version.
 Run: `pnpm --filter z-news-backend exec tsc --version`
 Expected: prints a `5.x` version.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -199,7 +199,7 @@ git commit -m "chore: consolidate to a single root pnpm-lock.yaml"
 - Delete: `apps/backend/Dockerfile`
 - Delete: `apps/backend/docker-compose.yml`
 
-- [ ] **Step 1: Remove them**
+- [x] **Step 1: Remove them**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -208,7 +208,7 @@ git rm apps/backend/Dockerfile apps/backend/docker-compose.yml
 
 (Keep `apps/backend/.dockerignore` — it stays, per the Context note above.)
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git commit -m "chore: remove stale port-3000 Dockerfile/compose superseded by infra/docker"
@@ -231,7 +231,7 @@ git commit -m "chore: remove stale port-3000 Dockerfile/compose superseded by in
 - Move: `apps/backend/infra/monitoring/prometheus.yml` → `infra/monitoring/prometheus.yml`
 - Move: `apps/backend/infra/monitoring/grafana/datasources/prometheus.yml` → `infra/monitoring/grafana/datasources/prometheus.yml`
 
-- [ ] **Step 1: git mv the reusable pieces**
+- [x] **Step 1: git mv the reusable pieces**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -243,11 +243,11 @@ rmdir apps/backend/infra 2>/dev/null || true
 git rm infra/docker/docker-compose.yml infra/docker/.dockerignore
 ```
 
-- [ ] **Step 2: Rewrite infra/docker/Dockerfile's EXPOSE/healthcheck (already correct — verify only)**
+- [x] **Step 2: Rewrite infra/docker/Dockerfile's EXPOSE/healthcheck (already correct — verify only)**
 
 Read `infra/docker/Dockerfile` and confirm it still has `EXPOSE 5000 9229`, `EXPOSE 5000`, and `CMD curl -f http://localhost:5000/health || exit 1` (it does — this file was already the corrected one, just moved). No edit needed, this step is a verification checkpoint only.
 
-- [ ] **Step 3: Recreate infra/docker/docker-compose.yml as the canonical dev-lite compose**
+- [x] **Step 3: Recreate infra/docker/docker-compose.yml as the canonical dev-lite compose**
 
 Create `infra/docker/docker-compose.yml`:
 ```yaml
@@ -343,7 +343,7 @@ volumes:
 
 (Changes from the pre-move version: `context`/`dockerfile`/`env_file`/volumes rewritten from `.`/`Dockerfile`/`.env` to `../../apps/backend/...` and `../../infra/docker/Dockerfile`, since this file now lives in `infra/docker/` instead of `apps/backend/`; container names prefixed `z-news-backend-*` instead of the old bare `z-news-*`, since this is now one of several apps in the monorepo.)
 
-- [ ] **Step 4: Fix the `../../` paths in docker-compose.dev.yml**
+- [x] **Step 4: Fix the `../../` paths in docker-compose.dev.yml**
 
 In `infra/docker/docker-compose.dev.yml`, replace every `../../` with `../../apps/backend/` for the `app` service's `context`, `env_file`, and `volumes` entries. Concretely:
 
@@ -389,7 +389,7 @@ In `infra/docker/docker-compose.dev.yml`, replace every `../../` with `../../app
 
 Everything else in the file (redis, redis-commander, rabbitmq, zookeeper, kafka, kafka-ui, mongo-express, mailhog, prometheus, grafana services, networks, volumes) is unchanged — their `../monitoring/...` references stay correct since `monitoring/` is still a sibling of `docker/` under `infra/`.
 
-- [ ] **Step 5: Fix the `../../` paths in docker-compose.prod.yml**
+- [x] **Step 5: Fix the `../../` paths in docker-compose.prod.yml**
 
 In `infra/docker/docker-compose.prod.yml`, apply the same rewrite to the `app` and `nginx` services:
 
@@ -448,7 +448,7 @@ And further down, the `nginx` service's app-context volume:
 
 Everything else (redis, rabbitmq, zookeeper, kafka, resource limits, healthchecks, logging, profiles, networks, volumes) is unchanged.
 
-- [ ] **Step 6: docker-compose.kafka.yml and docker-compose.rabbitmq.yml need no path changes**
+- [x] **Step 6: docker-compose.kafka.yml and docker-compose.rabbitmq.yml need no path changes**
 
 These two files have no `../../` app-context references (they're standalone broker stacks with no `app` service) — confirm with:
 ```bash
@@ -456,7 +456,7 @@ grep -n '\.\./\.\./' infra/docker/docker-compose.kafka.yml infra/docker/docker-c
 ```
 Expected: no output (no matches).
 
-- [ ] **Step 7: Validate every compose file parses**
+- [x] **Step 7: Validate every compose file parses**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -468,7 +468,7 @@ docker compose -f infra/docker/docker-compose.rabbitmq.yml config --quiet && ech
 ```
 Expected: each prints `OK: <file>` with no YAML/interpolation errors. (If the `docker` CLI isn't installed in this environment, skip this step and note it as a manual follow-up before first real deploy.)
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -482,7 +482,7 @@ git commit -m "chore: extract infra/ (docker, nginx, monitoring) to repo root, f
 **Files:**
 - Modify: `apps/backend/package.json` (scripts section)
 
-- [ ] **Step 1: Replace the docker:* scripts**
+- [x] **Step 1: Replace the docker:* scripts**
 
 Change:
 ```json
@@ -519,7 +519,7 @@ to:
 
 (Dropped the redundant `docker:compose:*` aliases — they pointed at the same file as `docker:dev`/`docker:prod` did before, now covered by those. Added `docker:dev:full` for the kafka/rabbitmq/monitoring stack in `docker-compose.dev.yml`. `docker:prod` now genuinely targets `docker-compose.prod.yml` instead of silently reusing the dev compose file — this is a real behavior fix, flag it to whoever owns deployment.)
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add apps/backend/package.json
@@ -533,7 +533,7 @@ git commit -m "fix: point backend docker:* scripts at relocated infra/docker com
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Replace the content**
+- [x] **Step 1: Replace the content**
 
 ```markdown
 # Z-News Monorepo
@@ -564,7 +564,7 @@ pnpm docker:prod       # production stack (resource limits, healthcheck, optiona
 ```
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add README.md
@@ -575,7 +575,7 @@ git commit -m "docs: update root README for the pnpm workspace and infra layout"
 
 ## Task 9: Final verification pass
 
-- [ ] **Step 1: Confirm the top-level layout**
+- [x] **Step 1: Confirm the top-level layout**
 
 ```bash
 cd /Users/mac/Developer/Othors/z-news/z-news
@@ -583,35 +583,35 @@ find . -maxdepth 2 -not -path '*/node_modules*' -not -path './.git*' | sort
 ```
 Expected: `apps/adminpanel`, `apps/backend`, `apps/frontend`, `infra`, `pnpm-workspace.yaml`, `package.json`, `pnpm-lock.yaml`, `.npmrc`, `.gitignore`, `README.md`.
 
-- [ ] **Step 2: Confirm no `apps/backend/infra` remains**
+- [x] **Step 2: Confirm no `apps/backend/infra` remains**
 
 ```bash
 ls apps/backend/infra 2>&1
 ```
 Expected: `No such file or directory`.
 
-- [ ] **Step 3: Confirm workspace member count**
+- [x] **Step 3: Confirm workspace member count**
 
 ```bash
 pnpm -r list --depth -1
 ```
 Expected: lists `z-news-frontend`, `z-news-backend`, `z-news-adminpanel` (3 workspace packages).
 
-- [ ] **Step 4: Backend still builds**
+- [x] **Step 4: Backend still builds**
 
 ```bash
 pnpm --filter z-news-backend build
 ```
 Expected: `tsc` completes, `apps/backend/dist/index.js` exists, exit code 0.
 
-- [ ] **Step 5: Frontend still lints**
+- [x] **Step 5: Frontend still lints**
 
 ```bash
 pnpm --filter z-news-frontend lint
 ```
 Expected: exits 0 (or only pre-existing warnings unrelated to this move — do not fix unrelated lint issues here).
 
-- [ ] **Step 6: git history is intact for both renamed apps**
+- [x] **Step 6: git history is intact for both renamed apps**
 
 ```bash
 git log --oneline de99baa^2 | wc -l   # server pre-merge history — expect 218
@@ -619,7 +619,7 @@ git log --oneline 7a4ecab^2 | wc -l   # website pre-merge history — expect 88
 ```
 (Commit hashes `de99baa`/`7a4ecab` are the original subtree-merge commits from when this monorepo was first assembled — confirms the rename didn't disturb them.)
 
-- [ ] **Step 7: Final commit if anything is outstanding**
+- [x] **Step 7: Final commit if anything is outstanding**
 
 ```bash
 git status --short
