@@ -10,6 +10,9 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@blocknote/core": "^0.35.0",
+    "@blocknote/mantine": "^0.35.0",
+    "@blocknote/react": "^0.35.0",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/typography": "^0.5.16",
     "class-variance-authority": "^0.7.1",
@@ -30,6 +33,7 @@
     "react-share": "^5.2.2",
     "react-to-print": "^3.1.1",
     "react-use-measure": "^2.1.7",
+    "recharts": "^2.15.3",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
