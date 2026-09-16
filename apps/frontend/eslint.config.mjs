@@ -61,5 +61,5 @@ export default [
     ],
   },
   // Prettier configuration is now applied
-  ...prettierConfig,
+  prettierConfig,
 ];
