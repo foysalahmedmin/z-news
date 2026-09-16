@@ -24,5 +24,10 @@ export type TNotificationRecipient = {
   created_at: string;
 };
 
-export type TNotificationRecipientsResponse = Response<TNotificationRecipient>;
-export type TNotificationRecipientResponse = Response<TNotificationRecipient[]>;
+export type TNotificationRecipientResponse = Response<TNotificationRecipient>;
+export type TNotificationRecipientsResponse = Response<
+  TNotificationRecipient[]
+>;
+export type TNotificationRecipientReadAllResponse = Response<{
+  count: number;
+}>;
