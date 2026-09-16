@@ -1,0 +1,16 @@
+
+> z-news-adminpanel@0.0.0 build
+> tsc -b && vite build
+
+src/components/(common)/news-articles-page/NewsArticlesDataTableSection/index.tsx(136,15): error TS7053: Element implicitly has an 'any' type because expression of type 'TStatus' can't be used to index type '{ draft: string; pending: string; published: string; archived: string; }'.
+  Property 'scheduled' does not exist on type '{ draft: string; pending: string; published: string; archived: string; }'.
+src/components/(common)/news-articles-page/NewsArticlesWorkflowKanbanSection/index.tsx(119,16): error TS2528: A module cannot have multiple default exports.
+src/components/(common)/news-articles-page/NewsArticlesWorkflowKanbanSection/index.tsx(120,16): error TS2528: A module cannot have multiple default exports.
+src/components/(user)/profile-page/ProfileNewsDataTableSection/index.tsx(136,15): error TS7053: Element implicitly has an 'any' type because expression of type 'TStatus' can't be used to index type '{ draft: string; pending: string; published: string; archived: string; }'.
+  Property 'scheduled' does not exist on type '{ draft: string; pending: string; published: string; archived: string; }'.
+src/pages/(common)/CommentsPage/index.tsx(102,9): error TS6133: 'getStatusColor' is declared but its value is never read.
+src/pages/(common)/ContentTemplatesPage/index.tsx(3,19): error TS2307: Cannot find module 'react-hot-toast' or its corresponding type declarations.
+src/pages/(common)/NewsArticlesEditPage/index.tsx(164,9): error TS2322: Type 'TStatus | undefined' is not assignable to type '"archived" | "pending" | "draft" | "published" | undefined'.
+  Type '"scheduled"' is not assignable to type '"archived" | "pending" | "draft" | "published" | undefined'.
+src/pages/(common)/NewsArticlesEditPage/index.tsx(171,9): error TS2322: Type 'TStatus | undefined' is not assignable to type '"archived" | "pending" | "draft" | "published" | undefined'.
+  Type '"scheduled"' is not assignable to type '"archived" | "pending" | "draft" | "published" | undefined'.
