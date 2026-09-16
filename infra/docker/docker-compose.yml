@@ -4,16 +4,16 @@ services:
   # Main Application
   app:
     build:
-      context: ../../
-      dockerfile: Dockerfile
+      context: ../../apps/backend
+      dockerfile: ../../infra/docker/Dockerfile
       target: ${TARGET:-development}
-    container_name: main-server-app
+    container_name: z-news-backend-app
     restart: unless-stopped
     ports:
       - '${APP_PORT:-5000}:5000'
       - '${DEBUG_PORT:-9229}:9229' # Debug port (dev only)
     env_file:
-      - ../../.env
+      - ../../apps/backend/.env
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - REDIS_URL=redis://redis:6379
@@ -26,16 +26,16 @@ services:
       - app-network
     volumes:
       # Development: Mount source code for hot reload
-      - ${DEV_VOLUME_MOUNT:-../../src:/app/src}
-      - ${DEV_VOLUME_MOUNT:-../../package.json:/app/package.json}
+      - ${DEV_VOLUME_MOUNT:-../../apps/backend/src:/app/src}
+      - ${DEV_VOLUME_MOUNT:-../../apps/backend/package.json:/app/package.json}
       # Logs directory for both dev and prod
-      - ../../logs:/app/logs
+      - ../../apps/backend/logs:/app/logs
     command: ${DOCKER_CMD:-pnpm run start:dev}
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: main-server-redis
+    container_name: z-news-backend-redis
     restart: unless-stopped
     ports:
       - '${REDIS_PORT:-6379}:6379'
@@ -53,7 +53,7 @@ services:
   # MongoDB Express (Development only)
   mongo-express:
     image: mongo-express:latest
-    container_name: main-server-mongo-express
+    container_name: z-news-backend-mongo-express
     restart: unless-stopped
     ports:
       - '${MONGO_EXPRESS_PORT:-8081}:8081'
@@ -69,7 +69,7 @@ services:
   # Mailhog (Development only)
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: main-server-mailhog
+    container_name: z-news-backend-mailhog
     restart: unless-stopped
     ports:
       - '${MAILHOG_SMTP_PORT:-1025}:1025'
@@ -86,5 +86,3 @@ networks:
 volumes:
   redis_data:
     driver: local
-
-
