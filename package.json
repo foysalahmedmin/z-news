@@ -1,0 +1,13 @@
+{
+  "name": "z-news",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter z-news-frontend dev",
+    "dev:backend": "pnpm --filter z-news-backend dev",
+    "build:frontend": "pnpm --filter z-news-frontend build",
+    "build:backend": "pnpm --filter z-news-backend build",
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix"
+  }
+}
