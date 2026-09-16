@@ -2,9 +2,9 @@
 
 import { ENV } from "@/config";
 import { cn } from "@/lib/utils";
-import type { TProcessedMenu } from "@/types/route-menu.type";
 import { X } from "lucide-react";
 import React, { memo } from "react";
+import useAdminMenu from "../hooks/useAdminMenu";
 import MenuItem from "./MenuItem";
 
 interface SidebarProps {
@@ -12,40 +12,8 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-// TODO(nav-phase): This static list stands in for apps/adminpanel's
-// role-filtered, Redux-driven menu (`useMenu()` / `state.menu`, populated by
-// `MenuApplier` from the route config). It exists purely so the sidebar
-// shell has something to render. A later migration phase will replace this
-// with the real menu config, filtered by the signed-in user's role.
-const ADMIN_MENU_ITEMS: TProcessedMenu[] = [
-  { name: "Overview", menuType: "title" },
-  { name: "Dashboard", path: "/admin", icon: "layout-dashboard" },
-
-  { name: "Content", menuType: "title" },
-  {
-    name: "News Articles",
-    icon: "newspaper",
-    children: [
-      { name: "All Articles", path: "/admin/news" },
-      { name: "Content Templates", path: "/admin/content-templates" },
-    ],
-  },
-  { name: "Categories", path: "/admin/categories", icon: "folder-tree" },
-  { name: "Events", path: "/admin/events", icon: "calendar-days" },
-  { name: "Files", path: "/admin/files", icon: "files" },
-
-  { name: "Engagement", menuType: "title" },
-  { name: "Comments", path: "/admin/comments", icon: "message-square" },
-  { name: "Reactions", path: "/admin/reactions", icon: "heart" },
-  { name: "Notifications", path: "/admin/notifications", icon: "bell" },
-
-  { name: "Administration", menuType: "title" },
-  { name: "Users", path: "/admin/users", icon: "users" },
-  { name: "Bin", path: "/admin/bin", icon: "trash-2" },
-];
-
 const Sidebar: React.FC<SidebarProps> = memo(({ className, onClose }) => {
-  const menus = ADMIN_MENU_ITEMS;
+  const { menus } = useAdminMenu();
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
