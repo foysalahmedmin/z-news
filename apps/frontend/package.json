@@ -13,6 +13,7 @@
     "@blocknote/core": "^0.35.0",
     "@blocknote/mantine": "^0.35.0",
     "@blocknote/react": "^0.35.0",
+    "@hookform/resolvers": "^5.2.1",
     "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/typography": "^0.5.16",
@@ -32,13 +33,15 @@
     "react-day-picker": "^9.8.1",
     "react-dom": "^19.1.0",
     "react-fast-marquee": "^1.6.5",
+    "react-hook-form": "^7.61.1",
     "react-redux": "^9.2.0",
     "react-share": "^5.2.2",
     "react-to-print": "^3.1.1",
     "react-toastify": "^11.0.5",
     "react-use-measure": "^2.1.7",
     "recharts": "^2.15.3",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
