@@ -33,9 +33,19 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResponse> {
 
 // POST - Sign Out
 export async function signOut(): Promise<AuthResponse> {
-  const response = await api.post("/api/auth/signout", null, {
+  const response = await api.post("/api/auth/logout", null, {
     headers: { "Content-Type": "application/json" },
   });
+  return response.data as AuthResponse;
+}
+
+// POST - Google Sign In
+export async function googleSignIn(id_token: string): Promise<AuthResponse> {
+  const response = await api.post(
+    "/api/auth/google-login",
+    { id_token },
+    { headers: { "Content-Type": "application/json" } },
+  );
   return response.data as AuthResponse;
 }
 

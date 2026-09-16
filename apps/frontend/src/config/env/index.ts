@@ -3,4 +3,5 @@ export const ENV = {
     process.env.NEXT_PUBLIC_APP_URL || "https://z-news-website.vercel.app",
   api_url:
     process.env.NEXT_PUBLIC_API_URL || "https://z-news-server.vercel.app",
+  google_client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
 };

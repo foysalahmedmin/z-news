@@ -13,6 +13,7 @@
     "@blocknote/core": "^0.35.0",
     "@blocknote/mantine": "^0.35.0",
     "@blocknote/react": "^0.35.0",
+    "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-query": "^5.74.4",
