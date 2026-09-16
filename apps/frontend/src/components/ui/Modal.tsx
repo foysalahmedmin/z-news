@@ -8,6 +8,7 @@ import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import type { ComponentProps } from "react";
 import { createContext, Fragment, useContext } from "react";
+import type React from "react";
 import PortalWrapper from "../wrappers/PortalWrapper";
 import type { ButtonProps } from "./Button";
 import { Button } from "./Button";
@@ -294,21 +295,16 @@ const ModalCloseTrigger: React.FC<ButtonProps> = ({
   );
 };
 
-// Modal Compound Component
-const Modal = Object.assign(ModalRoot, {
-  Root: ModalRoot,
-  Backdrop: ModalBackdrop,
-  Content: ModalContent,
-  Header: ModalHeader,
-  Title: ModalTitle,
-  Body: ModalBody,
-  Footer: ModalFooter,
-  Trigger: ModalTrigger,
-  Close: ModalCloseTrigger,
-});
-
 export {
-  Modal,
+  ModalRoot as Modal,
+  ModalBackdrop,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+  ModalTrigger,
+  ModalCloseTrigger,
   modalBackdropVariants,
   modalContentVariants,
   modalVariants,

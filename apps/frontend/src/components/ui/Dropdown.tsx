@@ -8,6 +8,7 @@ import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { createContext, useContext } from "react";
+import type React from "react";
 import type { ButtonProps } from "./Button";
 import { Button } from "./Button";
 
@@ -202,17 +203,13 @@ const DropdownTrigger: React.FC<ButtonProps> = ({ onClick, ...props }) => {
   );
 };
 
-// Dropdown Compound Component
-const Dropdown = Object.assign(DropdownRoot, {
-  Content: DropdownContent,
-  Item: DropdownItem,
-  Separator: DropdownSeparator,
-  Label: DropdownLabel,
-  Trigger: DropdownTrigger,
-});
-
 export {
-  Dropdown,
+  DropdownRoot as Dropdown,
+  DropdownContent,
+  DropdownItem,
+  DropdownSeparator,
+  DropdownLabel,
+  DropdownTrigger,
   dropdownContentVariants,
   dropdownVariants,
   useDropdown,

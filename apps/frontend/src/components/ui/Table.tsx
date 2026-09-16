@@ -105,15 +105,13 @@ const TableCaption: React.FC<React.ComponentProps<"caption">> = ({
   />
 );
 
-const Table = Object.assign(TableRoot, {
-  Root: TableRoot,
-  Header: TableHeader,
-  Body: TableBody,
-  Footer: TableFooter,
-  Row: TableRow,
-  Head: TableHead,
-  Cell: TableCell,
-  Caption: TableCaption,
-});
-
-export { Table };
+export {
+  TableRoot as Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableCaption,
+};

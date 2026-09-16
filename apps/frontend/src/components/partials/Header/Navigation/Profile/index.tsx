@@ -1,6 +1,11 @@
 "use client";
 
-import { Dropdown } from "@/components/ui/Dropdown";
+import {
+  Dropdown,
+  DropdownContent,
+  DropdownItem,
+  DropdownSeparator,
+} from "@/components/ui/Dropdown";
 import { URLS } from "@/config";
 import useUser from "@/hooks/states/useUser";
 import { LogOut, User, UserIcon } from "lucide-react";
@@ -47,7 +52,7 @@ const Profile: React.FC = () => {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       >
-        <Dropdown.Content className="top-2 right-0 w-60">
+        <DropdownContent className="top-2 right-0 w-60">
           <div className="flex items-center gap-2 px-2 py-1">
             <div className="bg-accent text-accent-foreground flex size-10 items-center justify-center overflow-hidden rounded-md">
               {image ? (
@@ -67,21 +72,21 @@ const Profile: React.FC = () => {
               <div className="text-muted-foreground text-xs">{email}</div>
             </div>
           </div>
-          <Dropdown.Separator />
-          <Dropdown.Item>
+          <DropdownSeparator />
+          <DropdownItem>
             <Link href="/profile" className="flex items-center gap-2">
               <User className="size-4" />
               Profile
             </Link>
-          </Dropdown.Item>
-          <Dropdown.Item
+          </DropdownItem>
+          <DropdownItem
             onClick={clearUser}
             className="flex items-center gap-2 text-red-600 hover:bg-red-50"
           >
             <LogOut className="size-4" />
             Sign out
-          </Dropdown.Item>
-        </Dropdown.Content>
+          </DropdownItem>
+        </DropdownContent>
       </Dropdown>
     </div>
   );

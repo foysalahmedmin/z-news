@@ -1,7 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
+import {
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalCloseTrigger,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 import { TNews } from "@/types/news.type";
 import { Check, Copy as CopyIcon, Share2 } from "lucide-react";
@@ -56,13 +64,13 @@ const Share: React.FC<ReactionProps> = ({ news, className }) => {
 
       {/* Modal */}
       <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
-        <Modal.Backdrop>
-          <Modal.Content size={"sm"} className="my-auto">
-            <Modal.Header>
-              <Modal.Title>শেয়ার</Modal.Title>
-              <Modal.Close size={"sm"} />
-            </Modal.Header>
-            <Modal.Body>
+        <ModalBackdrop>
+          <ModalContent size={"sm"} className="my-auto">
+            <ModalHeader>
+              <ModalTitle>শেয়ার</ModalTitle>
+              <ModalCloseTrigger size={"sm"} />
+            </ModalHeader>
+            <ModalBody>
               <div className="space-y-6">
                 <p className="text-muted-foreground text-center">
                   সংবাদটি শেয়ার করুন
@@ -105,9 +113,9 @@ const Share: React.FC<ReactionProps> = ({ news, className }) => {
                   </Button>
                 </div>
               </div>
-            </Modal.Body>
-          </Modal.Content>
-        </Modal.Backdrop>
+            </ModalBody>
+          </ModalContent>
+        </ModalBackdrop>
       </Modal>
     </div>
   );

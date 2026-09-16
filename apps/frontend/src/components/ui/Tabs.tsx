@@ -3,7 +3,6 @@
 import { cn } from "@/lib/utils";
 import type {
   ComponentProps,
-  ComponentType,
   HTMLAttributes,
   LiHTMLAttributes,
 } from "react";
@@ -59,7 +58,7 @@ const useTabs = (): TabsContextValue => {
   const context = useContext(TabsContext);
 
   if (!context) {
-    throw new Error("Tabs compound components must be used within <Tabs.Root>");
+    throw new Error("Tabs compound components must be used within <Tabs>");
   }
 
   return context;
@@ -265,29 +264,13 @@ const TabsItem = ({
   );
 };
 
-// Compound Component Structure using Object.assign
-type TabsComponent = ComponentType<TabsRootProps> & {
-  Root: ComponentType<TabsRootProps>;
-  List: ComponentType<TabsListProps>;
-  Trigger: ComponentType<TabsTriggerProps>;
-  Content: ComponentType<TabsContentProps>;
-  Item: ComponentType<TabsItemProps>;
-};
-
-const Tabs = TabsRoot as TabsComponent;
-
-// Assign compound components
-Object.assign(Tabs, {
-  Root: TabsRoot,
-  List: TabsList,
-  Trigger: TabsTrigger,
-  Content: TabsContent,
-  Item: TabsItem,
-});
-
 // Export everything
 export {
-  Tabs,
+  TabsRoot as Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  TabsItem,
   useTabs,
   type TabsContentProps,
   type TabsContextValue,
@@ -295,6 +278,6 @@ export {
   type TabsListProps,
   type TabsRootProps,
   type TabsTriggerProps,
-  type TabValue
+  type TabValue,
 };
 

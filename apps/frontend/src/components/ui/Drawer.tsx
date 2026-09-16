@@ -297,21 +297,16 @@ const DrawerCloseTrigger: React.FC<ButtonProps> = ({
   );
 };
 
-// Drawer Compound Component
-const Drawer = Object.assign(DrawerRoot, {
-  Root: DrawerRoot,
-  Backdrop: DrawerBackdrop,
-  Content: DrawerContent,
-  Header: DrawerHeader,
-  Title: DrawerTitle,
-  Body: DrawerBody,
-  Footer: DrawerFooter,
-  Trigger: DrawerTrigger,
-  Close: DrawerCloseTrigger,
-});
-
 export {
-  Drawer,
+  DrawerRoot as Drawer,
+  DrawerBackdrop,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerBody,
+  DrawerFooter,
+  DrawerTrigger,
+  DrawerCloseTrigger,
   drawerBackdropVariants,
   drawerContentVariants,
   drawerVariants,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { FormControl } from "@/components/ui/FormControl";
+import { FormControl, FormControlLabel } from "@/components/ui/FormControl";
 import { submitContact } from "@/services/contact.service";
 import type { TContactPayload } from "@/types/contact.type";
 import React from "react";
@@ -123,7 +123,7 @@ const ContactPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <FormControl.Label htmlFor="name">নাম</FormControl.Label>
+            <FormControlLabel htmlFor="name">নাম</FormControlLabel>
             <FormControl
               id="name"
               name="name"
@@ -134,7 +134,7 @@ const ContactPage: React.FC = () => {
           </div>
 
           <div>
-            <FormControl.Label htmlFor="email">ইমেইল</FormControl.Label>
+            <FormControlLabel htmlFor="email">ইমেইল</FormControlLabel>
             <FormControl
               id="email"
               name="email"
@@ -146,7 +146,7 @@ const ContactPage: React.FC = () => {
           </div>
 
           <div>
-            <FormControl.Label htmlFor="message">বার্তা</FormControl.Label>
+            <FormControlLabel htmlFor="message">বার্তা</FormControlLabel>
             <FormControl
               as="textarea"
               id="message"

@@ -252,21 +252,14 @@ const MaxInput = ({ className, ...props }: MaxInputProps) => {
   );
 };
 
-// Compound Component using Object.assign
-const RangeSlider = Object.assign(RangeSliderRoot, {
-  Input: RangeSliderInput,
-  MinInput,
-  MaxInput,
-});
-
 // Export types and component
 export type {
   MaxInputProps,
   MinInputProps,
   RangeSliderContextValue,
   RangeSliderInputProps,
-  RangeSliderProps
+  RangeSliderProps,
 };
 
-  export { RangeSlider };
+export { RangeSliderRoot as RangeSlider, RangeSliderInput, MinInput, MaxInput };
 

@@ -3,7 +3,11 @@
 import { ButtonMenu } from "@/components/buttons/ButtonMenu";
 import Logo from "@/components/partials/Logo";
 import Sidebar from "@/components/partials/Sidebar";
-import { Drawer } from "@/components/ui/Drawer";
+import {
+  Drawer,
+  DrawerBackdrop,
+  DrawerContent,
+} from "@/components/ui/Drawer";
 import { TCategory } from "@/types/category.type";
 import { Search } from "lucide-react";
 import Link from "next/link";
@@ -64,13 +68,13 @@ const TopHeader: React.FC<HeaderProps> = ({ className, categories }) => {
         </div>
       </div>
       <Drawer isOpen={isMenuOpen} setIsOpen={setIsMenuOpen}>
-        <Drawer.Backdrop />
-        <Drawer.Content className="flex h-screen w-80 max-w-[90vw] flex-col">
+        <DrawerBackdrop />
+        <DrawerContent className="flex h-screen w-80 max-w-[90vw] flex-col">
           <Sidebar
             categories={categories}
             onClose={() => setIsMenuOpen(false)}
           />
-        </Drawer.Content>
+        </DrawerContent>
       </Drawer>
     </>
   );
