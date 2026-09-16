@@ -1,0 +1,429 @@
+import httpStatus from 'http-status';
+import mongoose from 'mongoose';
+import AppError from '../../builder/app-error';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import * as BadgeRepository from './badge.repository';
+import { TBadge } from './badge.type';
+
+// Create badge
+const createBadge = async (payload: TBadge) => {
+  const badge = await BadgeRepository.create(payload);
+  return badge;
+};
+
+// Get all badges
+const getAllBadges = async (
+  query: Record<string, string | boolean | undefined>,
+) => {
+  const filter: Record<string, unknown> = {};
+
+  if (query.category) {
+    filter.category = query.category;
+  }
+
+  if (query.rarity) {
+    filter.rarity = query.rarity;
+  }
+
+  if (query.is_active !== undefined) {
+    filter.is_active = query.is_active === 'true';
+  }
+
+  const badges = await BadgeRepository.findMany(filter);
+
+  return badges;
+};
+
+// Get active badges
+const getActiveBadges = async () => {
+  const badges = await BadgeRepository.getActiveBadges();
+  return badges;
+};
+
+// Get badges by category
+const getBadgesByCategory = async (category: TBadge['category']) => {
+  const badges = await BadgeRepository.getBadgesByCategory(category);
+  return badges;
+};
+
+// Get badge by ID
+const getBadgeById = async (badgeId: string) => {
+  const badge = await BadgeRepository.findById(badgeId);
+
+  if (!badge) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
+  }
+
+  return badge;
+};
+
+// Update badge
+const updateBadge = async (badgeId: string, payload: Partial<TBadge>) => {
+  const badge = await BadgeRepository.findByIdAndUpdate(badgeId, payload);
+
+  if (!badge) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
+  }
+
+  return badge;
+};
+
+// Delete badge
+const deleteBadge = async (badgeId: string) => {
+  const badge = await BadgeRepository.findById(badgeId);
+
+  if (!badge) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
+  }
+
+  await badge.softDelete();
+
+  return badge;
+};
+
+// Check and award badges to user
+const checkAndAwardBadges = async (userId: string) => {
+  const profile = await UserProfileRepository.findOne({ user: userId });
+
+  if (!profile) {
+    return [];
+  }
+
+  const allBadges = await BadgeRepository.getActiveBadges();
+  const earnedBadgeIds = profile.badges.map((b) => b.badge_id.toString());
+  const newBadges: TBadge[] = [];
+
+  for (const badge of allBadges!) {
+    // Skip if already earned
+    if (earnedBadgeIds.includes(badge._id!.toString())) {
+      continue;
+    }
+
+    let shouldAward = false;
+
+    // Check criteria
+    switch (badge.criteria.type) {
+      case 'articles_read':
+        shouldAward = profile.articles_read >= badge.criteria.threshold;
+        break;
+
+      case 'comments_posted':
+        shouldAward = profile.total_comments >= badge.criteria.threshold;
+        break;
+
+      case 'reading_streak':
+        shouldAward = profile.reading_streak >= badge.criteria.threshold;
+        break;
+
+      case 'reputation_score':
+        shouldAward = profile.reputation_score >= badge.criteria.threshold;
+        break;
+
+      case 'years_member': {
+        const yearsSinceCreation =
+          (Date.now() - profile.created_at!.getTime()) /
+          (1000 * 60 * 60 * 24 * 365);
+        shouldAward = yearsSinceCreation >= badge.criteria.threshold;
+        break;
+      }
+
+      case 'custom':
+        // Custom badges are awarded manually
+        shouldAward = false;
+        break;
+    }
+
+    if (shouldAward) {
+      // Award badge
+      profile.badges.push({
+        badge_id: badge._id as mongoose.Types.ObjectId,
+        earned_at: new Date(),
+      });
+
+      // Award reputation points
+      profile.reputation_score += badge.points;
+
+      newBadges.push(badge as TBadge);
+    }
+  }
+
+  if (newBadges.length > 0) {
+    await profile.save();
+  }
+
+  return newBadges;
+};
+
+// Seed default badges
+const seedDefaultBadges = async () => {
+  const defaultBadges: Partial<TBadge>[] = [
+    // Reader Badges
+    {
+      name: 'First Article',
+      description: 'Read your first article',
+      icon: '📖',
+      category: 'reader',
+      criteria: {
+        type: 'articles_read',
+        threshold: 1,
+        description: 'Read 1 article',
+      },
+      rarity: 'common',
+      points: 5,
+      is_active: true,
+    },
+    {
+      name: 'Bookworm',
+      description: 'Read 100 articles',
+      icon: '🐛',
+      category: 'reader',
+      criteria: {
+        type: 'articles_read',
+        threshold: 100,
+        description: 'Read 100 articles',
+      },
+      rarity: 'rare',
+      points: 50,
+      is_active: true,
+    },
+    {
+      name: 'News Addict',
+      description: 'Read 500 articles',
+      icon: '📰',
+      category: 'reader',
+      criteria: {
+        type: 'articles_read',
+        threshold: 500,
+        description: 'Read 500 articles',
+      },
+      rarity: 'epic',
+      points: 200,
+      is_active: true,
+    },
+
+    // Engagement Badges
+    {
+      name: 'First Comment',
+      description: 'Post your first comment',
+      icon: '💬',
+      category: 'engagement',
+      criteria: {
+        type: 'comments_posted',
+        threshold: 1,
+        description: 'Post 1 comment',
+      },
+      rarity: 'common',
+      points: 5,
+      is_active: true,
+    },
+    {
+      name: 'Conversationalist',
+      description: 'Post 50 comments',
+      icon: '🗣️',
+      category: 'engagement',
+      criteria: {
+        type: 'comments_posted',
+        threshold: 50,
+        description: 'Post 50 comments',
+      },
+      rarity: 'rare',
+      points: 50,
+      is_active: true,
+    },
+    {
+      name: 'Community Leader',
+      description: 'Post 200 comments',
+      icon: '👑',
+      category: 'engagement',
+      criteria: {
+        type: 'comments_posted',
+        threshold: 200,
+        description: 'Post 200 comments',
+      },
+      rarity: 'epic',
+      points: 150,
+      is_active: true,
+    },
+
+    // Loyalty Badges
+    {
+      name: 'Week Warrior',
+      description: 'Read articles for 7 consecutive days',
+      icon: '🔥',
+      category: 'loyalty',
+      criteria: {
+        type: 'reading_streak',
+        threshold: 7,
+        description: '7-day reading streak',
+      },
+      rarity: 'common',
+      points: 20,
+      is_active: true,
+    },
+    {
+      name: 'Month Master',
+      description: 'Read articles for 30 consecutive days',
+      icon: '⭐',
+      category: 'loyalty',
+      criteria: {
+        type: 'reading_streak',
+        threshold: 30,
+        description: '30-day reading streak',
+      },
+      rarity: 'rare',
+      points: 100,
+      is_active: true,
+    },
+    {
+      name: 'Year Champion',
+      description: 'Read articles for 365 consecutive days',
+      icon: '🏆',
+      category: 'loyalty',
+      criteria: {
+        type: 'reading_streak',
+        threshold: 365,
+        description: '365-day reading streak',
+      },
+      rarity: 'legendary',
+      points: 500,
+      is_active: true,
+    },
+
+    // Achievement Badges
+    {
+      name: 'Rising Star',
+      description: 'Reach 100 reputation points',
+      icon: '🌟',
+      category: 'achievement',
+      criteria: {
+        type: 'reputation_score',
+        threshold: 100,
+        description: 'Earn 100 reputation points',
+      },
+      rarity: 'rare',
+      points: 0,
+      is_active: true,
+    },
+    {
+      name: 'Influencer',
+      description: 'Reach 500 reputation points',
+      icon: '💎',
+      category: 'achievement',
+      criteria: {
+        type: 'reputation_score',
+        threshold: 500,
+        description: 'Earn 500 reputation points',
+      },
+      rarity: 'epic',
+      points: 0,
+      is_active: true,
+    },
+    {
+      name: 'Legend',
+      description: 'Reach 1000 reputation points',
+      icon: '👑',
+      category: 'achievement',
+      criteria: {
+        type: 'reputation_score',
+        threshold: 1000,
+        description: 'Earn 1000 reputation points',
+      },
+      rarity: 'legendary',
+      points: 0,
+      is_active: true,
+    },
+
+    // Loyalty (Years)
+    {
+      name: 'One Year Member',
+      description: 'Member for 1 year',
+      icon: '🎂',
+      category: 'loyalty',
+      criteria: {
+        type: 'years_member',
+        threshold: 1,
+        description: '1 year membership',
+      },
+      rarity: 'rare',
+      points: 100,
+      is_active: true,
+    },
+  ];
+
+  for (const badgeData of defaultBadges) {
+    const exists = await BadgeRepository.findOne({ name: badgeData.name });
+    if (!exists) {
+      await BadgeRepository.create(badgeData);
+    }
+  }
+
+  return await BadgeRepository.findMany({});
+};
+
+const getBadgeProgress = async (userId: string) => {
+  const profile = await UserProfileRepository.findOne({ user: userId });
+  if (!profile) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User profile not found');
+  }
+
+  const allBadges = await BadgeRepository.getActiveBadges();
+  const earnedBadgeIds = new Set(
+    profile.badges.map((b) => b.badge_id.toString()),
+  );
+
+  const getUserValue = (criteriaType: string): number => {
+    switch (criteriaType) {
+      case 'articles_read':
+        return profile.articles_read;
+      case 'comments_posted':
+        return profile.total_comments;
+      case 'reading_streak':
+        return profile.reading_streak;
+      case 'reputation_score':
+        return profile.reputation_score;
+      case 'years_member':
+        return (
+          (Date.now() - profile.created_at!.getTime()) /
+          (1000 * 60 * 60 * 24 * 365)
+        );
+      default:
+        return 0;
+    }
+  };
+
+  return (allBadges ?? []).map((badge) => {
+    const earned = earnedBadgeIds.has(badge._id!.toString());
+    const current = earned
+      ? badge.criteria.threshold
+      : getUserValue(badge.criteria.type);
+    const threshold = badge.criteria.threshold;
+    return {
+      badge: {
+        _id: badge._id,
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        category: badge.category,
+        rarity: badge.rarity,
+        points: badge.points,
+      },
+      earned,
+      current: Math.min(current, threshold),
+      threshold,
+      percentage: Math.min(Math.round((current / threshold) * 100), 100),
+    };
+  });
+};
+
+export const BadgeService = {
+  createBadge,
+  getAllBadges,
+  getActiveBadges,
+  getBadgesByCategory,
+  getBadgeById,
+  updateBadge,
+  deleteBadge,
+  checkAndAwardBadges,
+  seedDefaultBadges,
+  getBadgeProgress,
+};
