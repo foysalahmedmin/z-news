@@ -125,12 +125,12 @@ const SigninForm: React.FC = () => {
           <div className="grid gap-3">
             <div className="flex items-center">
               <label htmlFor="password">Password</label>
-              <a
-                href="#"
+              <Link
+                href="/auth/forgot-password"
                 className="ml-auto text-sm underline-offset-2 hover:underline"
               >
                 Forgot your password?
-              </a>
+              </Link>
             </div>
             <div className="relative">
               <FormControl
