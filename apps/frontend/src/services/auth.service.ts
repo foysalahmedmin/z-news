@@ -79,11 +79,16 @@ export async function forgetPassword(
 }
 
 // PATCH - Reset Password
+// The backend's resetPassword controller reads the reset token from
+// `req.headers.authorization` (it's an unauthenticated route reached via an
+// emailed link, not a signed-in session), so `token` is sent the same way
+// here rather than through the request body.
 export async function resetPassword(
   payload: ResetPasswordPayload,
+  token: string,
 ): Promise<AuthResponse> {
   const response = await api.patch("/api/auth/reset-password", payload, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: token },
   });
   return response.data as AuthResponse;
 }
@@ -97,9 +102,12 @@ export async function emailVerificationSource(): Promise<AuthResponse> {
 }
 
 // POST - Email Verification
-export async function emailVerification(): Promise<AuthResponse> {
+// Same as resetPassword above: the verification token comes from the
+// emailed link's URL, not a signed-in session, so it's forwarded as the
+// Authorization header the backend controller actually reads.
+export async function emailVerification(token: string): Promise<AuthResponse> {
   const response = await api.post("/api/auth/email-verification", null, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: token },
   });
   return response.data as AuthResponse;
 }
