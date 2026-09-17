@@ -17,53 +17,37 @@ import {
   ModalHeader,
   ModalTitle,
 } from "@/components/ui/Modal";
-import { fetchCategoriesTree } from "@/services/admin-category.service";
-import { updateEvent } from "@/services/admin-event.service";
-import type { TCategory } from "@/types/admin-category.type";
-import type { TEvent, TEventUpdatePayload } from "@/types/admin-event.type";
+import { updateCategory } from "@/services/admin-category.service";
+import type {
+  TCategory,
+  TCategoryUpdatePayload,
+} from "@/types/admin-category.type";
 import type { ErrorResponse } from "@/types/response.type";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
-// Ported from apps/adminpanel's `components/modals/EventEditModal`. Compound
-// `Modal.X` / `FormControl.X` dot-notation swapped for the flat named
-// exports used in apps/frontend's UI kit, and the CRUD service swapped from
-// `event.service` (public, read-only in apps/frontend) to
-// `admin-event.service` (authenticated admin CRUD).
-type EventEditModalProps = {
-  default: Partial<TEvent>;
+// Ported from apps/adminpanel's `components/modals/CategoryEditModal`.
+// Compound `Modal.X` / `FormControl.X` dot-notation swapped for the flat
+// named exports used in apps/frontend's UI kit, and the CRUD service
+// swapped from `category.service` (public, read-only in apps/frontend) to
+// `admin-category.service` (authenticated admin CRUD).
+type CategoryEditModalProps = {
+  default: Partial<TCategory>;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   className?: string;
   mutationKey?: string[];
 };
 
-const renderCategoryOptions = (
-  category?: TCategory,
-  prefix = "",
-): React.ReactNode => {
-  if (!category) return null;
-  return (
-    <>
-      <option key={category._id} value={category._id}>
-        {prefix + category.name}
-      </option>
-      {category.children?.map((child) =>
-        renderCategoryOptions(child, prefix + "-- "),
-      )}
-    </>
-  );
-};
-
-const EventEditModal: React.FC<EventEditModalProps> = ({
+const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   isOpen,
   setIsOpen,
-  default: event,
-  mutationKey: key = ["events"],
+  default: category,
+  mutationKey: key = ["categories"],
 }) => {
   const queryClient = useQueryClient();
 
@@ -74,71 +58,54 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
     watch,
     setValue,
     formState: { errors },
-  } = useForm<TEventUpdatePayload>({
+  } = useForm<TCategoryUpdatePayload>({
     defaultValues: {
-      icon: event.icon || "",
-      name: event?.name || "",
-      slug: event?.slug || "",
-      status: event?.status || "active",
-      description: event?.description || "",
-      is_featured: event?.is_featured || false,
-      layout: event?.layout || "default",
-      published_at: (event?.published_at
-        ? new Date(event?.published_at)
-        : new Date()
-      )
-        .toISOString()
-        .slice(0, 16),
-      ...(event?.expire_at && {
-        expire_at: new Date(event?.expire_at).toISOString().slice(0, 16),
-      }),
-      ...(event?.category?._id && { category: event?.category?._id }),
+      icon: category.icon || "",
+      name: category?.name || "",
+      slug: category?.slug || "",
+      sequence: category?.sequence || 0,
+      status: category?.status || "active",
+      description: category?.description || "",
+      is_featured: category?.is_featured || false,
+      layout: category?.layout || "default",
     },
   });
 
   React.useEffect(() => {
     reset({
-      icon: event.icon || "",
-      name: event.name || "",
-      slug: event.slug || "",
-      status: event.status || "active",
-      description: event.description || "",
-      is_featured: event.is_featured || false,
-      layout: event.layout || "default",
-      published_at: (event?.published_at
-        ? new Date(event?.published_at)
-        : new Date()
-      )
-        .toISOString()
-        .slice(0, 16),
-      ...(event?.expire_at && {
-        expire_at: new Date(event?.expire_at).toISOString().slice(0, 16),
-      }),
-      ...(event?.category?._id && { category: event?.category?._id }),
+      icon: category.icon || "",
+      name: category.name || "",
+      slug: category.slug || "",
+      sequence: category.sequence || 0,
+      status: category.status || "active",
+      description: category.description || "",
+      is_featured: category.is_featured || false,
+      layout: category.layout || "default",
     });
-  }, [event, reset]);
+  }, [category, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: TEventUpdatePayload) => updateEvent(event._id!, data),
+    mutationFn: (data: TCategoryUpdatePayload) =>
+      updateCategory(category._id!, data),
     onSuccess: (data) => {
-      toast.success(data?.message || "Event updated successfully!");
+      toast.success(data?.message || "Category updated successfully!");
       queryClient.invalidateQueries({ queryKey: key || [] });
       setIsOpen(false);
     },
     onError: (error: AxiosError<ErrorResponse>) => {
-      toast.error(error.response?.data?.message || "Failed to update event");
-      console.error("Update Event Error:", error);
+      toast.error(error.response?.data?.message || "Failed to update category");
+      console.error("Update Category Error:", error);
     },
   });
 
-  const onSubmit = (data: TEventUpdatePayload) => {
+  const onSubmit = (data: TCategoryUpdatePayload) => {
     const updatedFields = Object.entries(data).reduce<
-      Partial<TEventUpdatePayload>
+      Partial<TCategoryUpdatePayload>
     >((acc, [key, value]) => {
-      const fieldKey = key as keyof TEventUpdatePayload;
+      const fieldKey = key as keyof TCategoryUpdatePayload;
 
-      // Compare with current event value
-      if (value !== event[fieldKey as keyof TEvent]) {
+      // Compare with current category value
+      if (value !== category[fieldKey as keyof TCategory]) {
         (acc as any)[fieldKey] = value;
       }
 
@@ -162,22 +129,16 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
       .replace(/\s+/g, "-")
       .replace(/[?#&=/\\]/g, "");
 
-    setValue("slug", slugValue || event?.slug || "");
+    setValue("slug", slugValue || category?.slug || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nameValue, setValue]);
-
-  const { data } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () =>
-      fetchCategoriesTree({ sort: "sequence", limit: 25, status: "active" }),
-  });
 
   return (
     <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
       <ModalBackdrop>
         <ModalContent>
           <ModalHeader>
-            <ModalTitle>Edit Event</ModalTitle>
+            <ModalTitle>Edit Category</ModalTitle>
             <ModalCloseTrigger />
           </ModalHeader>
 
@@ -199,7 +160,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
                 <FormControlLabel>Name</FormControlLabel>
                 <FormControl
                   type="text"
-                  placeholder="Event name"
+                  placeholder="Category name"
                   {...register("name", { required: "Name is required" })}
                 />
                 {errors.name && (
@@ -211,7 +172,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
                 <FormControlLabel>Slug</FormControlLabel>
                 <FormControl
                   type="text"
-                  placeholder="event-slug"
+                  placeholder="category-slug"
                   {...register("slug", { required: "Slug is required" })}
                 />
                 {errors.slug && (
@@ -224,9 +185,24 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
                 <FormControl
                   as={"textarea"}
                   className="h-auto min-h-20 py-2"
-                  placeholder="Event description"
+                  placeholder="Category description"
                   {...register("description")}
                 />
+              </div>
+
+              <div>
+                <FormControlLabel>Sequence</FormControlLabel>
+                <FormControl
+                  type="number"
+                  placeholder="0"
+                  {...register("sequence", {
+                    required: "Sequence is required",
+                    valueAsNumber: true,
+                  })}
+                />
+                {errors.sequence && (
+                  <FormControlError>{errors.sequence.message}</FormControlError>
+                )}
               </div>
 
               <div>
@@ -244,24 +220,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
                 )}
               </div>
 
-              {/* Category */}
-              <div>
-                <FormControlLabel htmlFor="category">
-                  Category
-                </FormControlLabel>
-                <FormControl
-                  as="select"
-                  id="category"
-                  {...register("category")}
-                >
-                  <option value="">Select a category</option>
-                  {data?.data?.map((category) =>
-                    renderCategoryOptions(category),
-                  )}
-                </FormControl>
-              </div>
-
-              {/* Add Layout field */}
+              {/* Layout */}
               <div>
                 <FormControlLabel>Layout</FormControlLabel>
                 <FormControl
@@ -287,47 +246,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
                 )}
               </div>
 
-              {/* Published At */}
-              <div>
-                <FormControlLabel>Published At *</FormControlLabel>
-                <FormControl
-                  type="datetime-local"
-                  {...register("published_at", {
-                    required: "Published date is required",
-                  })}
-                />
-                {errors.published_at && (
-                  <FormControlError>
-                    {errors.published_at.message}
-                  </FormControlError>
-                )}
-              </div>
-
-              {/* Expire At */}
-              <div>
-                <FormControlLabel>Expire At (Optional)</FormControlLabel>
-                <FormControl
-                  type="datetime-local"
-                  min={watch("published_at")}
-                  {...register("expire_at", {
-                    validate: (value) => {
-                      if (!value) return true;
-                      return (
-                        new Date(value) >
-                          new Date(watch("published_at") || "") ||
-                        "Expire date must be after published date"
-                      );
-                    },
-                  })}
-                />
-                {errors.expire_at && (
-                  <FormControlError>
-                    {errors.expire_at.message}
-                  </FormControlError>
-                )}
-              </div>
-
-              {/* Add Featured field */}
+              {/* Featured */}
               <div>
                 <label className="inline-flex items-center gap-2">
                   <input
@@ -365,4 +284,4 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
   );
 };
 
-export default EventEditModal;
+export default CategoryEditModal;

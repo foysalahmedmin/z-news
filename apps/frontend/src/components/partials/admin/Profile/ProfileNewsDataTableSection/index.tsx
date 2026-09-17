@@ -1,0 +1,265 @@
+"use client";
+
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import type { TColumn, TState } from "@/components/ui/DataTable";
+import DataTable from "@/components/ui/DataTable";
+import { Switch } from "@/components/ui/Switch";
+import { ENV } from "@/config";
+import useUser from "@/hooks/states/useUser";
+import { cn } from "@/lib/utils";
+import type { TNews, TStatus } from "@/types/admin-news.type";
+import { getThumbnail } from "@/utils/getThumbnail";
+import { Earth, Edit, Eye, Tag, Trash, User } from "lucide-react";
+import Link from "next/link";
+import React from "react";
+
+// Ported from apps/adminpanel's
+// `components/(user)/profile-page/ProfileNewsDataTableSection` (there named
+// `NewsArticlesDataTableSection`). The original also accepted a
+// `breadcrumbs` prop, used only to stash a react-router `state` object on
+// the view/edit Links — Next's `Link` has no `state` prop, so it's dropped
+// here (same dead-prop pattern as apps/frontend's already-ported
+// EventsDataTableSection). The `/news-articles/*` admin links now point at
+// `/admin/news-articles/*`, matching the routes apps/frontend's Comments and
+// Reactions views already link to ahead of that page being ported.
+//
+// The source rendered the View/Edit buttons unconditionally, falling back
+// to a dead `href="#"` plus a `disabled` className when the viewer lacked
+// permission — but no `.disabled` rule exists anywhere in
+// apps/frontend's stylesheets, so that fallback was a fully clickable
+// dead link with no visual cue. Rewritten to simply omit the button when
+// `canManage`/`canDelete` is false, which is both a real disabled state
+// and avoids Next's `Link` needing a placeholder href.
+type ProfileNewsDataTableSectionProps = {
+  data?: TNews[];
+  isLoading: boolean;
+  isError: boolean;
+  onDelete: (row: TNews) => void;
+  onToggleFeatured: (row: TNews) => void;
+  state: TState;
+};
+
+const ProfileNewsDataTableSection: React.FC<
+  ProfileNewsDataTableSectionProps
+> = ({ data = [], isLoading, isError, onDelete, onToggleFeatured, state }) => {
+  const { user } = useUser();
+  const { info } = user || {};
+
+  const columns: TColumn<TNews>[] = [
+    {
+      name: "News",
+      field: "_id",
+      isSortable: true,
+      isSearchable: true,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <div className="aspect-square h-20 flex-shrink-0 overflow-hidden rounded">
+            <img
+              className="size-full object-cover"
+              src={getThumbnail(row?.thumbnail?.url, row?.youtube)}
+              alt=""
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            {row.status === "published" ? (
+              <a
+                className="group block"
+                href={`${ENV.app_url}/news/${row.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <h3 className="text-base font-bold group-hover:underline">
+                  {row.title}
+                </h3>
+                <p className="text-sm">{row.slug}</p>
+              </a>
+            ) : (
+              <div>
+                <h3 className="text-base font-bold">{row.title}</h3>
+                <p className="text-sm">{row.slug}</p>
+              </div>
+            )}
+            <div className="flex items-center">
+              <Badge className="bg-muted text-foreground flex w-fit items-center gap-2 px-2 py-1 text-xs">
+                <Tag className="size-4" />
+                <span className="leading-none">{row?.category?.name}</span>
+              </Badge>
+              <Badge className="bg-muted text-foreground flex w-fit items-center gap-2 px-2 py-1 text-xs">
+                <User className="size-4" />
+                <span className="leading-none">{row?.author?.name}</span>
+              </Badge>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      name: "Published At",
+      field: "published_at",
+      isSortable: true,
+      cell: ({ cell }) => {
+        if (!cell) return <div>-</div>;
+        try {
+          return (
+            <div>
+              {new Date(cell as string).toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
+          );
+        } catch {
+          return <div>-</div>;
+        }
+      },
+    },
+    {
+      name: "Layout",
+      field: "layout",
+      isSortable: true,
+      cell: ({ cell }) => {
+        if (cell == null || cell === undefined) return <div>-</div>;
+        try {
+          return <div>{String(cell)}</div>;
+        } catch {
+          return <div>-</div>;
+        }
+      },
+    },
+    {
+      name: "Status",
+      field: "status",
+      isSortable: true,
+      cell: ({ cell }) => {
+        const statusStyles = {
+          draft: "bg-gray-100 text-gray-800",
+          pending: "bg-yellow-100 text-yellow-800",
+          scheduled: "bg-purple-100 text-purple-800",
+          published: "bg-green-100 text-green-800",
+          archived: "bg-red-100 text-red-800",
+        };
+
+        const status = cell as TStatus | null | undefined;
+        if (!status) return null;
+
+        return (
+          <span
+            className={cn(
+              "rounded-full px-2 py-1 text-xs font-medium",
+              statusStyles[status] || "bg-gray-100 text-gray-800",
+            )}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      name: "Featured",
+      field: "is_featured",
+      isSortable: true,
+      cell: ({ cell, row }) => {
+        // Handle various possible values for is_featured
+        const isChecked =
+          cell === true ||
+          cell === "true" ||
+          (typeof cell === "number" && cell === 1) ||
+          (typeof cell === "string" && cell.toLowerCase() === "true");
+        return (
+          <div>
+            <Switch
+              disabled={isLoading}
+              onChange={() => onToggleFeatured(row)}
+              checked={!!isChecked}
+            />
+          </div>
+        );
+      },
+    },
+    {
+      style: { width: "150px", textAlign: "center" },
+      name: "Actions",
+      field: "_id",
+      cell: ({ row }) => {
+        const canManage =
+          ["super-admin", "admin", "editor"].includes(info?.role || "") ||
+          row.author?._id === info?._id;
+        const canDelete =
+          ["super-admin", "admin"].includes(info?.role || "") ||
+          row.author?._id === info?._id;
+
+        return (
+          <div className="flex w-full items-center justify-center gap-2">
+            {row?.status === "published" && (
+              <a
+                href={`${ENV.app_url}/news/${row?.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  asChild={true}
+                  className="[--accent:blue]"
+                  size={"sm"}
+                  variant="outline"
+                  shape={"icon"}
+                >
+                  <Earth className="flex size-4 items-center justify-center" />
+                </Button>
+              </a>
+            )}
+            {canManage && (
+              <Link href={`/admin/news-articles/${row._id}`}>
+                <Button
+                  asChild={true}
+                  className="[--accent:green]"
+                  size={"sm"}
+                  variant="outline"
+                  shape={"icon"}
+                >
+                  <Eye className="flex size-4 items-center justify-center" />
+                </Button>
+              </Link>
+            )}
+            {canManage && (
+              <Link href={`/admin/news-articles/edit/${row._id}`}>
+                <Button asChild={true} size={"sm"} variant="outline" shape={"icon"}>
+                  <Edit className="size-4" />
+                </Button>
+              </Link>
+            )}
+            {canDelete && (
+              <Button
+                onClick={() => onDelete(row)}
+                className="[--accent:red]"
+                size={"sm"}
+                variant="outline"
+                shape={"icon"}
+              >
+                <Trash className="size-4" />
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+  return (
+    <div>
+      <DataTable
+        status={isLoading ? "loading" : isError ? "error" : "success"}
+        columns={columns}
+        data={data || []}
+        config={{
+          isSearchProcessed: true,
+          isSortProcessed: true,
+          isPaginationProcessed: true,
+        }}
+        state={state}
+      />
+    </div>
+  );
+};
+
+export default ProfileNewsDataTableSection;
