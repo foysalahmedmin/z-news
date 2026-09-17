@@ -8,24 +8,12 @@ This document presents the **fully industry-standard monolithic modular backend 
 
 ```plaintext
 project-root/
-├─ documents/                # Project documentation
+├─ docs/                     # Project documentation
 │  ├─ apis/                  # API documentation and Postman collections
 │  │  ├─ auth_apis/          # Auth module docs & collection
 │  │  └─ user_apis/          # User module docs & collection
-│  ├─ memories/              # Architectural Decision Records (ADR)
-│  ├─ plans/                 # Feature implementation roadmaps
-│  │  ├─ [feature_name]/
-│  │  │  ├─ plan.md
-│  │  │  └─ tasks.md
-│  │  └─ README.md
-│  ├─ project_roles.md       # Development Rules and Guidelines
-│  ├─ project_structure.md   # This file (Source of truth)
-│  └─ project_specification.md # Functional requirements
-├─ infra/                    # Infrastructure & deployment config
-│  ├─ docker/                # Dockerfiles and docker-compose
-│  ├─ nginx/                 # Nginx configuration
-│  └─ monitoring/            # Grafana, Prometheus configs
-├─ public/                   # Static files for frontend distribution (Ignored)
+│  ├─ rules.md               # Development Rules and Guidelines
+│  └─ structure.md           # This file (Source of truth)
 ├─ uploads/                  # Temporary and persistent file uploads (Ignored)
 ├─ dist/                     # Compiled JS output
 ├─ src/                      # Source code (see Section 2)
@@ -168,32 +156,32 @@ Each module is **fully self-contained**. All modules follow this exact file layo
 
 ### Active Modules
 
-| Module | Path | Description |
-|---|---|---|
-| `auth` | `/api/auth` | Login, signup, Google OAuth, tokens, password reset |
-| `user` | `/api/user` | User CRUD, 7-role system |
-| `user-profile` | `/api/user-profile` | Extended user profile data |
-| `guest` | `/api/guest` | Anonymous guest sessions |
-| `news` | `/api/news` | Core news articles with full lifecycle |
-| `news-headline` | `/api/news-headline` | Short headline snippets linked to news |
-| `news-break` | `/api/news-break` | Breaking news alerts |
-| `article-version` | `/api/article-version` | News content versioning/snapshots |
-| `category` | `/api/category` | Hierarchical categories (graphLookup) |
-| `event` | `/api/event` | News topics/events |
-| `comment` | `/api/comment` | Comments on news articles |
-| `comment-enhanced` | `/api/comment-enhanced` | Threaded/nested comments |
-| `reaction` | `/api/reaction` | Like/dislike reactions |
-| `view` | `/api/view` | Article view tracking |
-| `bookmark` | `/api/bookmark` | User bookmarks |
-| `file` | `/api/file` | File upload and management |
-| `media` | `/api/media` | Media library (image/video/audio) |
-| `notification` | `/api/notification` | Notification creation and sending |
-| `notification-recipient` | `/api/notification-recipient` | Per-user notification delivery |
-| `poll` | `/api/poll` | Polls attached to news articles |
-| `badge` | `/api/badge` | User achievement badges |
-| `workflow` | `/api/workflow` | Editorial workflow stages per news |
-| `template` | `/api/template` | Content templates |
-| `scheduler` | — | Background job (auto-publish, auto-archive) |
+| Module                   | Path                          | Description                                         |
+| ------------------------ | ----------------------------- | --------------------------------------------------- |
+| `auth`                   | `/api/auth`                   | Login, signup, Google OAuth, tokens, password reset |
+| `user`                   | `/api/user`                   | User CRUD, 7-role system                            |
+| `user-profile`           | `/api/user-profile`           | Extended user profile data                          |
+| `guest`                  | `/api/guest`                  | Anonymous guest sessions                            |
+| `news`                   | `/api/news`                   | Core news articles with full lifecycle              |
+| `news-headline`          | `/api/news-headline`          | Short headline snippets linked to news              |
+| `news-break`             | `/api/news-break`             | Breaking news alerts                                |
+| `article-version`        | `/api/article-version`        | News content versioning/snapshots                   |
+| `category`               | `/api/category`               | Hierarchical categories (graphLookup)               |
+| `event`                  | `/api/event`                  | News topics/events                                  |
+| `comment`                | `/api/comment`                | Comments on news articles                           |
+| `comment-enhanced`       | `/api/comment-enhanced`       | Threaded/nested comments                            |
+| `reaction`               | `/api/reaction`               | Like/dislike reactions                              |
+| `view`                   | `/api/view`                   | Article view tracking                               |
+| `bookmark`               | `/api/bookmark`               | User bookmarks                                      |
+| `file`                   | `/api/file`                   | File upload and management                          |
+| `media`                  | `/api/media`                  | Media library (image/video/audio)                   |
+| `notification`           | `/api/notification`           | Notification creation and sending                   |
+| `notification-recipient` | `/api/notification-recipient` | Per-user notification delivery                      |
+| `poll`                   | `/api/poll`                   | Polls attached to news articles                     |
+| `badge`                  | `/api/badge`                  | User achievement badges                             |
+| `workflow`               | `/api/workflow`               | Editorial workflow stages per news                  |
+| `template`               | `/api/template`               | Content templates                                   |
+| `scheduler`              | —                             | Background job (auto-publish, auto-archive)         |
 
 ---
 
@@ -212,19 +200,19 @@ draft → pending → scheduled → published → archived
 
 ## 5. Naming Conventions
 
-| Item | Convention | Example |
-|---|---|---|
-| Directories | `kebab-case` | `news-headline/`, `user-profile/` |
-| Module files | `[module].[role].ts` | `news.controller.ts`, `auth.service.ts` |
-| Shared constants | `src/constants/*.ts` | `app-constants.ts` |
-| Shared enums | `src/enums/*.ts` | `user-role.enum.ts` |
-| Shared validators | `src/validators/*.ts` | `request-validator.ts` |
-| Shared policies | `src/policies/*.ts` | `rbac.policy.ts` |
-| DB schema fields | `snake_case` | `is_deleted`, `published_at` |
-| TypeScript types | `T` prefix PascalCase | `TUser`, `TNewsDocument` |
-| Zod schemas | `*ValidationSchema` suffix | `signinValidationSchema` |
-| Tests | `.spec.ts` | `auth.service.spec.ts` |
-| Documentation | `snake_case.md` | `project_structure.md` |
+| Item              | Convention                 | Example                                 |
+| ----------------- | -------------------------- | --------------------------------------- |
+| Directories       | `kebab-case`               | `news-headline/`, `user-profile/`       |
+| Module files      | `[module].[role].ts`       | `news.controller.ts`, `auth.service.ts` |
+| Shared constants  | `src/constants/*.ts`       | `app-constants.ts`                      |
+| Shared enums      | `src/enums/*.ts`           | `user-role.enum.ts`                     |
+| Shared validators | `src/validators/*.ts`      | `request-validator.ts`                  |
+| Shared policies   | `src/policies/*.ts`        | `rbac.policy.ts`                        |
+| DB schema fields  | `snake_case`               | `is_deleted`, `published_at`            |
+| TypeScript types  | `T` prefix PascalCase      | `TUser`, `TNewsDocument`                |
+| Zod schemas       | `*ValidationSchema` suffix | `signinValidationSchema`                |
+| Tests             | `.spec.ts`                 | `auth.service.spec.ts`                  |
+| Documentation     | `snake_case.md`            | `project_structure.md`                  |
 
 ---
 
@@ -246,17 +234,17 @@ Request
 
 ## 7. Shared Infrastructure
 
-| Layer | Location | Purpose |
-|---|---|---|
-| Config | `src/config/` | All env vars and service connections |
-| Error class | `src/builder/app-error.ts` | `AppError(status, message)` |
-| Query builder | `src/builder/app-query-find.ts` | Chainable: search/filter/sort/paginate |
-| Aggregation | `src/builder/app-query-aggregation.ts` | Complex MongoDB aggregations |
-| Cache | `src/utils/cache.utils.ts` | `withCache`, `invalidateCacheByPattern` |
-| Auth middleware | `src/middlewares/auth.middleware.ts` | JWT + Redis-cached user lookup |
-| Response | `src/utils/send-response.ts` | Standardized `{ success, message, data, meta }` |
-| Event bus | `src/events/event-publisher.ts` | In-process pub/sub |
-| RBAC | `src/policies/rbac.policy.ts` | Role-permission matrix |
+| Layer           | Location                               | Purpose                                         |
+| --------------- | -------------------------------------- | ----------------------------------------------- |
+| Config          | `src/config/`                          | All env vars and service connections            |
+| Error class     | `src/builder/app-error.ts`             | `AppError(status, message)`                     |
+| Query builder   | `src/builder/app-query-find.ts`        | Chainable: search/filter/sort/paginate          |
+| Aggregation     | `src/builder/app-query-aggregation.ts` | Complex MongoDB aggregations                    |
+| Cache           | `src/utils/cache.utils.ts`             | `withCache`, `invalidateCacheByPattern`         |
+| Auth middleware | `src/middlewares/auth.middleware.ts`   | JWT + Redis-cached user lookup                  |
+| Response        | `src/utils/send-response.ts`           | Standardized `{ success, message, data, meta }` |
+| Event bus       | `src/events/event-publisher.ts`        | In-process pub/sub                              |
+| RBAC            | `src/policies/rbac.policy.ts`          | Role-permission matrix                          |
 
 ---
 
