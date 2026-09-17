@@ -37,11 +37,16 @@ const ChartAreaInteractiveSection = () => {
   const isMobile = useScreenSize().width < 1024;
   const [timeRange, setTimeRange] = React.useState("90d");
 
-  React.useEffect(() => {
+  // Adjust timeRange when isMobile changes, without the extra re-render an
+  // effect would cause (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
+  // Still user-overridable afterward via the select below.
+  const [prevIsMobile, setPrevIsMobile] = React.useState(isMobile);
+  if (isMobile !== prevIsMobile) {
+    setPrevIsMobile(isMobile);
     if (isMobile) {
       setTimeRange("7d");
     }
-  }, [isMobile]);
+  }
 
   const filteredData = chartData.filter((item) => {
     const date = new Date(item.date);
@@ -133,17 +138,21 @@ const ChartAreaInteractiveSection = () => {
             <ChartTooltip
               cursor={false}
               defaultIndex={isMobile ? -1 : 10}
-              content={
+              content={(props) => (
                 <ChartTooltipContent
+                  {...props}
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
+                    return new Date(value as string | number).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                      },
+                    );
                   }}
                   indicator="dot"
                 />
-              }
+              )}
             />
             <Area
               dataKey="mobile"

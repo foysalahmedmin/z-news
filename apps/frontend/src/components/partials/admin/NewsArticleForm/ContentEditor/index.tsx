@@ -1,10 +1,18 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import RichTextEditor from "@/components/ui/RichTextEditor";
+import dynamic from "next/dynamic";
+import { useFormContext } from "react-hook-form";
 import type { NewsFormData } from "../schema";
+
+// BlockNote's useCreateBlockNote touches `document` during its initial
+// render, which crashes Next.js's build-time static prerendering (Node has
+// no DOM). ssr: false keeps this component out of every server-side render
+// pass — build-time and request-time alike — matching BlockNote's own
+// Next.js integration guidance.
+const RichTextEditor = dynamic(() => import("@/components/ui/RichTextEditor"), {
+  ssr: false,
+});
 
 // Ported from apps/adminpanel's
 // news-articles-mutation-page/ContentEditor/index.tsx. Wraps the
