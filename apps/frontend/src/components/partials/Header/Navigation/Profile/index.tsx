@@ -73,12 +73,17 @@ const Profile: React.FC = () => {
             </div>
           </div>
           <DropdownSeparator />
-          <DropdownItem>
-            <Link href="/profile" className="flex items-center gap-2">
-              <User className="size-4" />
-              Profile
-            </Link>
-          </DropdownItem>
+          {user?.info?._id && (
+            <DropdownItem>
+              <Link
+                href={`/profile/${user.info._id}`}
+                className="flex items-center gap-2"
+              >
+                <User className="size-4" />
+                Profile
+              </Link>
+            </DropdownItem>
+          )}
           <DropdownItem
             onClick={clearUser}
             className="flex items-center gap-2 text-red-600 hover:bg-red-50"
