@@ -70,7 +70,7 @@ function getRequiredRoles(pathname: string): readonly string[] | undefined {
   return best?.roles;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const cookie = request.cookies.get(COOKIE_KEY)?.value;
   let user: TUserState | null = null;
 
