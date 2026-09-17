@@ -9,7 +9,7 @@ const router = express.Router();
 // GET
 router.get(
   '/self',
-  auth('admin'),
+  auth('admin', 'author', 'editor', 'contributor', 'subscriber', 'user'),
   NotificationRecipientControllers.getSelfNotificationRecipients,
 );
 

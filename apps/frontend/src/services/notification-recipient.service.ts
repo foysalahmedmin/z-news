@@ -19,7 +19,7 @@ export async function fetchNotificationRecipientsBySelf(query?: {
     }
   });
 
-  const url = `/api/notification-recipient/bulk/self?${params.toString()}`;
+  const url = `/api/notification-recipient/self?${params.toString()}`;
   const response = await api.get(url);
 
   return response.data;
