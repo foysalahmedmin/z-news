@@ -27,6 +27,11 @@ import {
   restoreComment,
 } from "@/services/admin-comment.service";
 import {
+  deleteEventPermanent,
+  fetchEvents,
+  restoreEvent,
+} from "@/services/admin-event.service";
+import {
   deleteNewsPermanent,
   fetchBulkNews,
   restoreNews,
@@ -36,12 +41,21 @@ import {
   fetchUsers,
   restoreUser,
 } from "@/services/admin-user.service";
+import {
+  deleteFilePermanent,
+  fetchFiles,
+  restoreFile,
+} from "@/services/file.service";
 import type { TCategory } from "@/types/admin-category.type";
 import type { TComment } from "@/types/admin-comment.type";
+import type { TEvent } from "@/types/admin-event.type";
 import type { TNews } from "@/types/admin-news.type";
 import type { TUser } from "@/types/admin-user.type";
+import type { TFile } from "@/types/file.type";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Calendar,
+  File as FileIcon,
   FileText,
   FolderOpen,
   MessageSquare,
@@ -100,6 +114,28 @@ const BinView = () => {
     queryKey: ["deleted-comments", page, limit],
     queryFn: () => fetchComments({ page, limit, is_deleted: true }),
     enabled: activeTab === "comments",
+  });
+
+  // Fetch deleted events
+  const {
+    data: eventsData,
+    isLoading: isLoadingEvents,
+    refetch: refetchEvents,
+  } = useQuery({
+    queryKey: ["deleted-events", page, limit],
+    queryFn: () => fetchEvents({ page, limit, is_deleted: true }),
+    enabled: activeTab === "events",
+  });
+
+  // Fetch deleted files
+  const {
+    data: filesData,
+    isLoading: isLoadingFiles,
+    refetch: refetchFiles,
+  } = useQuery({
+    queryKey: ["deleted-files", page, limit],
+    queryFn: () => fetchFiles({ page, limit, is_deleted: true }),
+    enabled: activeTab === "files",
   });
 
   // Handle restore user
@@ -270,6 +306,90 @@ const BinView = () => {
     }
   };
 
+  // Handle restore event
+  const handleRestoreEvent = async (event: TEvent) => {
+    try {
+      const ok = await confirm({
+        title: "Restore Event",
+        message: `Are you sure you want to restore ${event.name}?`,
+        confirmText: "Restore",
+        cancelText: "Cancel",
+      });
+
+      if (ok) {
+        await restoreEvent(event._id);
+        toast.success("Event restored successfully");
+        refetchEvents();
+      }
+    } catch (error) {
+      toast.error("Failed to restore event");
+      console.error(error);
+    }
+  };
+
+  // Handle permanent delete event
+  const handleDeleteEventPermanent = async (event: TEvent) => {
+    try {
+      const ok = await confirm({
+        title: "Delete Event Permanently",
+        message: `Are you sure you want to permanently delete ${event.name}? This action cannot be undone.`,
+        confirmText: "Delete Permanently",
+        cancelText: "Cancel",
+      });
+
+      if (ok) {
+        await deleteEventPermanent(event._id);
+        toast.success("Event deleted permanently");
+        refetchEvents();
+      }
+    } catch (error) {
+      toast.error("Failed to delete event");
+      console.error(error);
+    }
+  };
+
+  // Handle restore file
+  const handleRestoreFile = async (file: TFile) => {
+    try {
+      const ok = await confirm({
+        title: "Restore File",
+        message: `Are you sure you want to restore ${file.name || file.originalname}?`,
+        confirmText: "Restore",
+        cancelText: "Cancel",
+      });
+
+      if (ok) {
+        await restoreFile(file._id);
+        toast.success("File restored successfully");
+        refetchFiles();
+      }
+    } catch (error) {
+      toast.error("Failed to restore file");
+      console.error(error);
+    }
+  };
+
+  // Handle permanent delete file
+  const handleDeleteFilePermanent = async (file: TFile) => {
+    try {
+      const ok = await confirm({
+        title: "Delete File Permanently",
+        message: `Are you sure you want to permanently delete ${file.name || file.originalname}? This action cannot be undone.`,
+        confirmText: "Delete Permanently",
+        cancelText: "Cancel",
+      });
+
+      if (ok) {
+        await deleteFilePermanent(file._id);
+        toast.success("File deleted permanently");
+        refetchFiles();
+      }
+    } catch (error) {
+      toast.error("Failed to delete file");
+      console.error(error);
+    }
+  };
+
   // Get icon for each tab
   const getTabIcon = (tab: string) => {
     switch (tab) {
@@ -281,6 +401,10 @@ const BinView = () => {
         return <FileText className="size-4" />;
       case "comments":
         return <MessageSquare className="size-4" />;
+      case "events":
+        return <Calendar className="size-4" />;
+      case "files":
+        return <FileIcon className="size-4" />;
       default:
         return null;
     }
@@ -657,6 +781,211 @@ const BinView = () => {
     );
   };
 
+  // Render events tab content
+  const renderEventsTab = () => {
+    if (isLoadingEvents) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-6 text-center">
+          <Loader className="min-h-auto lg:min-h-auto" />
+        </div>
+      );
+    }
+
+    const events = eventsData?.data || [];
+    const metaTotal = Number(eventsData?.meta?.total || 0);
+    const metaPage = Number(eventsData?.meta?.page || page);
+    const metaLimit = Number(eventsData?.meta?.limit || limit);
+
+    return (
+      <>
+        <div className="text-muted-foreground text-sm">
+          <span className="font-medium">Total:</span> {metaTotal}
+        </div>
+
+        <div className="flex flex-1 flex-col space-y-4">
+          {events.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-6 text-center">
+              No deleted events found.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events.map((event) => (
+                <div
+                  key={event._id}
+                  className="bg-card rounded border p-4 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="text-muted-foreground size-4" />
+                        <p className="text-foreground truncate font-semibold">
+                          {event.name}
+                        </p>
+                        <span className="bg-muted text-muted-foreground rounded-full border px-2 py-1 text-xs font-medium capitalize">
+                          {event.status}
+                        </span>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-muted-foreground text-sm">
+                          <span className="font-medium">Slug:</span>{" "}
+                          {event.slug}
+                        </p>
+                        {event.category?.name && (
+                          <p className="text-muted-foreground text-sm">
+                            <span className="font-medium">Category:</span>{" "}
+                            {event.category.name}
+                          </p>
+                        )}
+                        {event.description && (
+                          <p className="text-foreground leading-relaxed">
+                            {event.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <Button
+                        onClick={() => handleRestoreEvent(event)}
+                        size={"sm"}
+                        variant="outline"
+                        className="[--accent:green]"
+                        shape={"default"}
+                      >
+                        <RefreshCw className="size-4" />
+                        Restore
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteEventPermanent(event)}
+                        size={"sm"}
+                        variant="outline"
+                        className="text-red-600 [--accent:red] hover:text-red-700"
+                        shape={"default"}
+                      >
+                        <Trash2 className="size-4" />
+                        Delete Permanently
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Pagination
+          total={metaTotal}
+          limit={metaLimit}
+          page={metaPage}
+          setLimit={setLimit}
+          setPage={setPage}
+        />
+      </>
+    );
+  };
+
+  // Render files tab content
+  const renderFilesTab = () => {
+    if (isLoadingFiles) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-6 text-center">
+          <Loader className="min-h-auto lg:min-h-auto" />
+        </div>
+      );
+    }
+
+    const files = filesData?.data || [];
+    const metaTotal = Number(filesData?.meta?.total || 0);
+    const metaPage = Number(filesData?.meta?.page || page);
+    const metaLimit = Number(filesData?.meta?.limit || limit);
+
+    return (
+      <>
+        <div className="text-muted-foreground text-sm">
+          <span className="font-medium">Total:</span> {metaTotal}
+        </div>
+
+        <div className="flex flex-1 flex-col space-y-4">
+          {files.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-6 text-center">
+              No deleted files found.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {files.map((file) => (
+                <div
+                  key={file._id}
+                  className="bg-card rounded border p-4 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex items-center gap-2">
+                        <FileIcon className="text-muted-foreground size-4" />
+                        <p className="text-foreground truncate font-semibold">
+                          {file.name || file.originalname}
+                        </p>
+                        <span className="bg-muted text-muted-foreground rounded-full border px-2 py-1 text-xs font-medium capitalize">
+                          {file.status}
+                        </span>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-muted-foreground text-sm">
+                          <span className="font-medium">Filename:</span>{" "}
+                          {file.filename}
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          <span className="font-medium">Type:</span>{" "}
+                          {file.mimetype}
+                        </p>
+                        {file.author?.name && (
+                          <p className="text-muted-foreground text-sm">
+                            <span className="font-medium">By:</span>{" "}
+                            {file.author.name} ({file.author.email})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <Button
+                        onClick={() => handleRestoreFile(file)}
+                        size={"sm"}
+                        variant="outline"
+                        className="[--accent:green]"
+                        shape={"default"}
+                      >
+                        <RefreshCw className="size-4" />
+                        Restore
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteFilePermanent(file)}
+                        size={"sm"}
+                        variant="outline"
+                        className="text-red-600 [--accent:red] hover:text-red-700"
+                        shape={"default"}
+                      >
+                        <Trash2 className="size-4" />
+                        Delete Permanently
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Pagination
+          total={metaTotal}
+          limit={metaLimit}
+          page={metaPage}
+          setLimit={setLimit}
+          setPage={setPage}
+        />
+      </>
+    );
+  };
+
   // Render active tab content
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -668,6 +997,10 @@ const BinView = () => {
         return renderNewsTab();
       case "comments":
         return renderCommentsTab();
+      case "events":
+        return renderEventsTab();
+      case "files":
+        return renderFilesTab();
       default:
         return null;
     }
@@ -685,7 +1018,14 @@ const BinView = () => {
 
           <div className="flex items-center gap-2">
             <div className="inline-flex overflow-hidden rounded border">
-              {["users", "categories", "news", "comments"].map((tab) => (
+              {[
+                "users",
+                "categories",
+                "news",
+                "comments",
+                "events",
+                "files",
+              ].map((tab) => (
                 <button
                   key={tab}
                   className={cn(
