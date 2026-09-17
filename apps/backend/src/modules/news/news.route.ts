@@ -41,7 +41,7 @@ router.get(
 // PATCH
 router.patch(
   '/bulk/self',
-  // auth('admin', 'author'),
+  auth('admin', 'author'),
   validation(NewsValidations.updateSelfBulkNewsValidationSchema),
   NewsControllers.updateBulkNews,
 );
@@ -119,7 +119,7 @@ router.delete(
 // POST
 router.post(
   '/file/:type',
-  // auth('admin', 'author'),
+  auth('admin', 'author'),
   (req, res, next) => {
     const { type } = req.params;
 

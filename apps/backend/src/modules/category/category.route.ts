@@ -11,6 +11,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
   '/upload-json',
+  auth('admin', 'editor', 'author'),
   upload.single('file'),
   CategoryControllers.insertCategoriesFromFile,
 );
