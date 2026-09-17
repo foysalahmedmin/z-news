@@ -12,26 +12,32 @@ import {
 } from "@/components/ui/Chart";
 import { FormControl } from "@/components/ui/FormControl";
 import useScreenSize from "@/hooks/ui/useScreenSize";
-import { chartData } from "./chart-data";
+import { fetchViewTrends } from "@/services/admin-view.service";
+import { useQuery } from "@tanstack/react-query";
 
 // Ported from apps/adminpanel's
 // src/components/(common)/dashboard-page/AdminDashboard/ChartAreaInteractiveSection/index.tsx.
-// Static sample data (chart-data.ts) — no real fetch to port here.
+// The source section rendered static sample data (chart-data.ts) split into
+// fake "desktop"/"mobile" series. The backend only tracks a single daily
+// view count (GET /api/view/analytics/trends), so this now renders that one
+// real series instead of inventing a device breakdown. Time-range selector
+// (`timeRange`) is passed straight through as the `days` query param instead
+// of the old client-side filtering against a hardcoded reference date, since
+// the endpoint already filters server-side by `days`.
 export const description = "An interactive area chart";
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Mobile",
+  views: {
+    label: "Views",
     color: "var(--primary)",
   },
 } satisfies ChartConfig;
+
+const DAYS_BY_RANGE: Record<string, number> = {
+  "90d": 90,
+  "30d": 30,
+  "7d": 7,
+};
 
 const ChartAreaInteractiveSection = () => {
   const isMobile = useScreenSize().width < 1024;
@@ -48,30 +54,28 @@ const ChartAreaInteractiveSection = () => {
     }
   }
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date);
-    const referenceDate = new Date("2024-06-30");
-    let daysToSubtract = 90;
-    if (timeRange === "30d") {
-      daysToSubtract = 30;
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7;
-    }
-    const startDate = new Date(referenceDate);
-    startDate.setDate(startDate.getDate() - daysToSubtract);
-    return date >= startDate;
+  const days = DAYS_BY_RANGE[timeRange] || 90;
+
+  const { data: trendsResponse } = useQuery({
+    queryKey: ["admin-dashboard", "view-trends", days],
+    queryFn: () => fetchViewTrends({ days }),
   });
+
+  const filteredData = (trendsResponse?.data ?? []).map((item) => ({
+    date: item.date,
+    views: item.count,
+  }));
 
   return (
     <Card className="@container/card">
       <CardHeader className="flex flex-row items-end justify-between gap-2">
         <div>
-          <CardTitle>Total Visitors</CardTitle>
+          <CardTitle>Total Views</CardTitle>
           <div className="text-muted-foreground text-sm">
             <span className="hidden @[540px]/card:block">
-              Total for the last 3 months
+              Article views over time
             </span>
-            <span className="@[540px]/card:hidden">Last 3 months</span>
+            <span className="@[540px]/card:hidden">Views over time</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -95,27 +99,15 @@ const ChartAreaInteractiveSection = () => {
         >
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
+                  stopColor="var(--color-views)"
                   stopOpacity={1.0}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-mobile)"
+                  stopColor="var(--color-views)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -155,18 +147,10 @@ const ChartAreaInteractiveSection = () => {
               )}
             />
             <Area
-              dataKey="mobile"
+              dataKey="views"
               type="natural"
-              fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
-              stackId="a"
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
-              stackId="a"
+              fill="url(#fillViews)"
+              stroke="var(--color-views)"
             />
           </AreaChart>
         </ChartContainer>
