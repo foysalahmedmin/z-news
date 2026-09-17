@@ -1,4 +1,3 @@
-import NewsActionSection from "@/components/(common)/news-page/NewsActionSection";
 import NewsCommentSection from "@/components/(common)/news-page/NewsCommentSection";
 import NewsDetailsSection from "@/components/(common)/news-page/NewsDetailsSection";
 import RelatedNewsSection from "@/components/(common)/news-page/RelatedNewsSection";
@@ -120,11 +119,6 @@ const NewsPage = async ({ params }: Props) => {
 
           <div className="container mx-auto">
             <hr />
-          </div>
-
-          {/* Like, Dislike & Actions - Client Component */}
-          <div className="hidden">
-            <NewsActionSection news={data} />
           </div>
 
           {/* Comment Section - Client Component */}
