@@ -1,28 +1,17 @@
 "use client";
 
-// TODO(data-phase): This is a local, in-memory placeholder that stands in for
-// apps/adminpanel's `useSetting` hook (which reads/writes `state.setting` in
-// Redux and is kept in sync with localStorage by `SettingApplier`). For this
-// shell-only port there is no Redux store yet, so theme/direction/language/
-// sidebar/header/layout state just lives in React context for the lifetime
-// of the `/admin` layout and resets on refresh. A later migration phase will
-// swap this out for the real Redux-backed hook (and localStorage
-// persistence) without changing the consumer API below.
-
+// Backs the admin shell's settings (theme/direction/language/sidebar/header/
+// layout) with the site's existing cookie-persisted usePreference hook,
+// wrapped in a Context so every admin consumer shares one reactive instance
+// instead of each independently reading the cookie on mount (which usePreference
+// alone would do if called directly in multiple places, per Next.js SSR
+// guidance on cookies being readable in both server and client contexts).
+import usePreference from "@/hooks/states/usePreference";
 import type { TPreferenceState } from "@/types/state.type";
 import type { ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 
 type AdminSetting = Required<TPreferenceState>;
-
-const DEFAULT_SETTING: AdminSetting = {
-  theme: "light",
-  direction: "ltr",
-  language: "en",
-  sidebar: "expanded",
-  header: "expanded",
-  layout: "vertical",
-};
 
 type AdminSettingContextValue = {
   setting: AdminSetting;
@@ -45,41 +34,39 @@ const AdminSettingContext = createContext<AdminSettingContextValue | null>(
 );
 
 export const AdminSettingProvider = ({ children }: { children: ReactNode }) => {
-  const [setting, setSettingState] = useState<AdminSetting>(DEFAULT_SETTING);
-
-  const setSetting = (payload: Partial<AdminSetting>) =>
-    setSettingState((prev) => ({ ...prev, ...payload }));
-
-  const setTheme = (theme: AdminSetting["theme"]) => setSetting({ theme });
-  const setDirection = (direction: AdminSetting["direction"]) =>
-    setSetting({ direction });
-  const setLanguage = (language: AdminSetting["language"]) =>
-    setSetting({ language });
-  const setSidebar = (sidebar: AdminSetting["sidebar"]) =>
-    setSetting({ sidebar });
-  const setHeader = (header: AdminSetting["header"]) => setSetting({ header });
-  const setLayout = (layout: AdminSetting["layout"]) => setSetting({ layout });
-
-  const value: AdminSettingContextValue = {
-    setting,
-    setSetting,
-    reset: () => setSettingState(DEFAULT_SETTING),
+  const {
+    preference,
+    setPreference,
+    reset,
     setTheme,
     setDirection,
     setLanguage,
     setSidebar,
     setHeader,
     setLayout,
-    toggleTheme: () => {
-      const order: AdminSetting["theme"][] = ["light", "dark", "system"];
-      const nextIndex = (order.indexOf(setting.theme) + 1) % order.length;
-      setTheme(order[nextIndex]);
-    },
-    toggleDirection: () =>
-      setDirection(setting.direction === "ltr" ? "rtl" : "ltr"),
-    toggleLanguage: () => setLanguage(setting.language === "en" ? "bn" : "en"),
-    toggleSidebar: () =>
-      setSidebar(setting.sidebar === "expanded" ? "compact" : "expanded"),
+    toggleTheme,
+    toggleDirection,
+    toggleLanguage,
+    toggleSidebar,
+  } = usePreference();
+
+  const value: AdminSettingContextValue = {
+    setting: preference as AdminSetting,
+    // usePreference's setPreference is a raw useState setter (replaces the
+    // whole object); this API's original contract was a partial-merge patch
+    // (setSetting({ sidebar: "compact" }) leaving other fields untouched).
+    setSetting: (payload) => setPreference({ ...preference, ...payload }),
+    reset,
+    setTheme,
+    setDirection,
+    setLanguage,
+    setSidebar,
+    setHeader,
+    setLayout,
+    toggleTheme,
+    toggleDirection,
+    toggleLanguage,
+    toggleSidebar,
   };
 
   return (

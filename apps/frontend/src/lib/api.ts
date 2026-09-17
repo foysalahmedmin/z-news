@@ -1,4 +1,6 @@
 import { ENV } from "@/config";
+import type { TUserState } from "@/types/state.type";
+import { getCookie } from "cookies-next";
 
 // types.ts (separate file for interfaces)
 export interface FetchConfig {
@@ -248,5 +250,31 @@ export class Fetch {
 }
 
 const api = new Fetch({ baseURL: ENV.api_url });
+
+// Attaches the signed-in user's access token to every request, in both
+// Server Components (SSR/RSC — cookies-next's isomorphic getCookie reads via
+// next/headers there) and Client Components (reads document.cookie) — the
+// same "user" cookie apps/frontend/src/hooks/states/useUser.tsx already
+// writes on sign-in. Public/anonymous requests simply have no cookie, so no
+// header gets added; the backend treats those as unauthenticated as before.
+api.interceptors.request.use(async (config) => {
+  const cookie = await getCookie("user");
+  let user: TUserState | null = null;
+
+  try {
+    user = cookie ? (JSON.parse(cookie) as TUserState) : null;
+  } catch {
+    user = null;
+  }
+
+  if (user?.token) {
+    config.options.headers = {
+      ...config.options.headers,
+      Authorization: user.token,
+    };
+  }
+
+  return config;
+});
 
 export default api;
