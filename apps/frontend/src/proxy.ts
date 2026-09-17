@@ -91,6 +91,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
+  // /user/* is a personal-account area for any signed-in role; it only
+  // needs the auth check above, not the /admin-specific role gating below.
+  if (request.nextUrl.pathname.startsWith("/user")) {
+    return NextResponse.next();
+  }
+
   const requiredRoles = getRequiredRoles(request.nextUrl.pathname);
   if (requiredRoles?.length && (!role || !requiredRoles.includes(role))) {
     return NextResponse.redirect(new URL("/admin", request.url));
@@ -100,5 +106,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/user/:path*"],
 };
