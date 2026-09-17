@@ -2,8 +2,10 @@
 "use client";
 
 import { TNews } from "@/types/news.type";
+import React from "react";
 import Print from "./print";
 import Reaction from "./reaction";
+import Save from "./save";
 import Share from "./share";
 import View from "./view";
 
@@ -18,7 +20,7 @@ const NewsActionSection: React.FC<NewsActionSectionProps> = ({ news }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Reaction news={news!} />
-            {/* <Save news={news!} /> */}
+            <Save news={news!} />
             <Print news={news!} />
             <Share news={news!} />
           </div>
