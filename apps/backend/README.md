@@ -13,6 +13,7 @@ A high-performance, enterprise-grade news portal backend that orchestrates dynam
     - [News \& Editorial Management](#news--editorial-management)
     - [User Engagement \& Gamification](#user-engagement--gamification)
     - [Community \& Infrastructure](#community--infrastructure)
+  - [Role-Based Dashboards](#role-based-dashboards)
   - [Tech Stack](#tech-stack)
   - [Security and Data Protection](#security-and-data-protection)
   - [Architecture](#architecture)
@@ -55,10 +56,11 @@ A high-performance, enterprise-grade news portal backend that orchestrates dynam
 
 ### User Engagement & Gamification
 
-- **Badge & Reputation System**: `Badge` definitions with type, criteria, and points — manually awarded by admins, reflected in `UserProfile.reputation_score`.
+- **Badge & Reputation System**: `Badge` definitions with category, rarity, points, and threshold-based `criteria` (articles read, comments posted, reading streak, reputation score, years as member, or custom). Awarded manually by admins (`POST /api/badge/award/:userId`) or auto-evaluated against a user's live stats; `GET /api/badge/progress` reports every active badge's current value vs. threshold for the calling user. Points transfer to `UserProfile.reputation_score` on award.
 - **Activity Counters**: Granular interaction tracking (`articles_read`, `total_comments`, `total_reactions`) incremented atomically on each engagement event.
-- **Interactive Community**: `Poll` system with duplicate-vote prevention, anonymous voting support, multi-option voting, and virtual result-percentage calculation on read.
-- **Personalized Collections**: Multi-list `Bookmark` management with paginated retrieval and reading list organization.
+- **Interactive Community**: `Poll` system with duplicate-vote prevention, anonymous/guest voting support (via the guest-session cookie), multi-option voting, configurable max-votes-per-user, and virtual result-percentage calculation on read. Polls can stand alone or attach to a specific `News` article.
+- **Personalized Collections**: Multi-list `Bookmark` management with paginated retrieval, notes, read/unread tracking, and named `ReadingList` collections (public/private, followable by other users).
+- **Role-Based Dashboards**: Dedicated `dashboard` module serving one consolidated, cached MongoDB-aggregation payload per role tier (Admin, Editorial, Reader) — see [Role-Based Dashboards](#role-based-dashboards) below.
 
 ### Community & Infrastructure
 
@@ -69,6 +71,19 @@ A high-performance, enterprise-grade news portal backend that orchestrates dynam
 - **Multi-Channel Notifications**: `Notification` + `NotificationRecipient` architecture delivering via `web`, `push`, and `email` (nodemailer/resend), with per-user preference enforcement.
 - **Message Brokers**: Optional RabbitMQ and Kafka integration for event-driven decoupling (configurable via env flags).
 - **Notification Templates**: Reusable `Template` module for structured notification content.
+- **Notification Audience Fan-Out**: Admin-authored broadcasts (`POST /api/notification`) accept an optional `audience` (`{roles?, user_ids?}`); when present, the service bulk-creates matching `NotificationRecipient` rows so the broadcast actually reaches inboxes, in addition to the existing per-flow fan-out (`sendNewsNotification`) used internally by the news/workflow modules.
+
+---
+
+## Role-Based Dashboards
+
+The `dashboard` module (`GET /api/dashboard/{admin,editorial,reader}`) replaces ad-hoc client-side stat composition with one consolidated, role-gated, cached endpoint per tier:
+
+- **`/api/dashboard/admin`** (`super-admin`, `admin`) — site-wide statistics (views, users, categories, news, comments, reactions, pending review, flagged comments), 30-day view-trend and user-growth series, category content breakdown, upcoming events, and a merged recent-activity feed (newly published articles, new comments, new signups).
+- **`/api/dashboard/editorial`** (`super-admin`, `admin`, `editor`, `author`, `contributor`) — shared category breakdown and recent-activity feed for all five roles, plus two sections included conditionally based on the caller's actual role: **My Content Performance** (own article counts by status, view/comment/reaction totals, personalized view trend, top articles) for `author`/`contributor`, and **Moderation Queue** (pending-article and flagged-comment counts, review list) for `editor` and admin roles.
+- **`/api/dashboard/reader`** (any authenticated role) — 30-day engagement trend (own comments + reactions), badge progress, following summary (authors/categories/topics), and upcoming events.
+
+Each endpoint runs its aggregation pipelines against the existing News/User/Comment/Reaction/View/Event/Category/UserProfile/Badge collections on read — there is no separate activity-log collection — and is cached with a short TTL via the shared `withCache`/`generateCacheKey` utility (`cache.utils.ts`), matching the same pattern used by `view` and `news-headline`.
 
 ---
 
@@ -87,7 +102,7 @@ A high-performance, enterprise-grade news portal backend that orchestrates dynam
 | Email Delivery          | Nodemailer v7.x / Resend (configurable provider)     |
 | Message Brokers         | RabbitMQ (amqplib) + Kafka (kafkajs) — optional      |
 | Security Infrastructure | bcrypt, jsonwebtoken, helmet, express-rate-limit      |
-| Testing                 | Jest with @swc/jest (49 suites, 408 tests)            |
+| Testing                 | Jest with @swc/jest (49 suites, 408 tests)           |
 
 ---
 
@@ -236,7 +251,7 @@ src/
 ├── interface/          # Global type definitions
 ├── jobs/               # Scheduled job initializers
 ├── middlewares/        # Auth, RBAC, Rate-Limit, Sanitize, File, Guest, Log
-├── modules/            # 23 domain-driven feature modules
+├── modules/            # 24 domain-driven feature modules
 │   ├── auth/           # JWT auth, Google OAuth, password reset
 │   ├── user/           # User CRUD and management
 │   ├── user-profile/   # Reputation, badges, activity stats, follows
@@ -248,17 +263,18 @@ src/
 │   ├── workflow/       # Editorial approval pipeline with stage transactions
 │   ├── article-version/ # Content snapshots and audit logs
 │   ├── comment/        # Threaded comment system with guest support
-│   ├── reaction/       # Like/dislike reactions on news and comments
-│   ├── view/           # Article view tracking
+│   ├── reaction/       # Like/dislike/insightful/funny/disagree reactions on news and comments
+│   ├── view/           # Article view tracking and analytics aggregation
 │   ├── poll/           # Voting system with duplicate prevention and results
-│   ├── bookmark/       # Reading list management (paginated)
-│   ├── badge/          # Achievement definitions and admin awarding
-│   ├── notification/   # Notification creation and admin management
+│   ├── bookmark/       # Bookmarks and named/public/followable reading lists (paginated)
+│   ├── badge/          # Achievement definitions, admin/auto-awarding, progress tracking
+│   ├── dashboard/      # Role-based consolidated statistics aggregation (Admin/Editorial/Reader)
+│   ├── notification/   # Notification creation, admin management, audience fan-out
 │   ├── notification-recipient/ # Per-user delivery tracking and read status
 │   ├── template/       # Reusable notification templates
 │   ├── event/          # Event tagging for news articles
 │   ├── file/           # Local file upload management
-│   ├── media/          # Media metadata management
+│   ├── media/          # Curated/tagged media library layered over File
 │   └── scheduler/      # Cron-based publish/archive jobs (worker 0 only)
 ├── policies/           # Authorization policy helpers
 ├── providers/          # External service provider stubs
@@ -544,6 +560,7 @@ The system exposes the service layer via the `/api` namespace:
 - **History**: `/api/article-version`
 - **Notifications**: `/api/notification`, `/api/notification-recipient`, `/api/template`
 - **Assets**: `/api/storage` (Google Cloud Storage), `/api/file` (local), `/api/media`
+- **Analytics**: `/api/dashboard/{admin,editorial,reader}` — consolidated, role-gated, cached statistics per tier
 
 ---
 
