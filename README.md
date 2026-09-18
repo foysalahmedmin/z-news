@@ -42,7 +42,7 @@ Each app was originally a separate repository (frontend, backend, and a standalo
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 graph TB
     subgraph "Clients"
         Reader[Reader / Public Visitor]
@@ -94,57 +94,39 @@ graph TB
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
-graph TB
-    Root((Z-News))
-
-    Root --> Editorial
-    subgraph Editorial["Editorial"]
-        E1["Article lifecycle (draft to published to archived)"]
-        E2[Multi-stage approval workflow]
-        E3[Version history / audit trail]
-        E4[Headlines & Breaking News]
-        E5[Content templates]
-    end
-
-    Root --> Community
-    subgraph Community["Community"]
-        C1[Threaded comments + guest participation]
-        C2[5-type reactions]
-        C3["Polls, incl. anonymous voting"]
-        C4[Bookmarks & public reading lists]
-    end
-
-    Root --> Gamification
-    subgraph Gamification["Gamification"]
-        G1["Badges (criteria-based, auto or manual award)"]
-        G2[Reputation score]
-        G3[Public leaderboard]
-        G4[Follow authors / categories / topics]
-    end
-
-    Root --> Notifications
-    subgraph Notifications["Notifications"]
-        N1[Per-user inbox]
-        N2[Admin broadcast composer]
-        N3[Web / push / email channels]
-    end
-
-    Root --> Analytics
-    subgraph Analytics["Analytics"]
-        A1[Admin-tier dashboard]
-        A2[Editorial-tier dashboard]
-        A3[Reader-tier dashboard]
-        A4[Consolidated, cached aggregation endpoints]
-    end
-
-    Root --> Platform
-    subgraph Platform["Platform"]
-        P1[RBAC — 7 roles + guest]
-        P2[Redis caching]
-        P3[Cloud + local file storage]
-        P4[Optional RabbitMQ / Kafka]
-    end
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
+mindmap
+  root((Z-News))
+    Editorial
+      Article lifecycle (draft→published→archived)
+      Multi-stage approval workflow
+      Version history / audit trail
+      Headlines & Breaking News
+      Content templates
+    Community
+      Threaded comments + guest participation
+      5-type reactions
+      Polls, incl. anonymous voting
+      Bookmarks & public reading lists
+    Gamification
+      Badges (criteria-based, auto or manual award)
+      Reputation score
+      Public leaderboard
+      Follow authors / categories / topics
+    Notifications
+      Per-user inbox
+      Admin broadcast composer
+      Web / push / email channels
+    Analytics
+      Admin-tier dashboard
+      Editorial-tier dashboard
+      Reader-tier dashboard
+      Consolidated, cached aggregation endpoints
+    Platform
+      RBAC — 7 roles + guest
+      Redis caching
+      Cloud + local file storage
+      Optional RabbitMQ / Kafka
 ```
 
 </div>
@@ -156,7 +138,7 @@ graph TB
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 graph LR
     subgraph Roles
         SA[super-admin]
