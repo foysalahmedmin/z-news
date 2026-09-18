@@ -30,7 +30,6 @@ z-news/
 │   ├── frontend/     # Next.js 16 — public site + admin panel + reader dashboard
 │   └── backend/      # Express + MongoDB — REST API, 24 domain modules
 ├── infra/            # Docker, nginx, and monitoring config for apps/backend
-├── docs/             # Superpowers plans/specs — design docs and implementation plans
 └── pnpm-workspace.yaml
 ```
 
@@ -234,7 +233,6 @@ pnpm lint:fix
 | :----------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | [`apps/backend/README.md`](apps/backend/README.md)     | Every domain module, security posture, full ER diagram, API endpoint reference, workflow sequence diagrams, production checklist |
 | [`apps/frontend/README.md`](apps/frontend/README.md)   | Route/role architecture, dual API client design, auth flow, full page routing matrix, directory map                              |
-| [`docs/superpowers/`](docs/superpowers/)                | Design specs and implementation plans for major features (role-based dashboards, backend-frontend parity work) — historical record of *why* things are shaped the way they are |
 
 ---
 
