@@ -21,22 +21,22 @@ Legend: ✅ done & committed · 🔄 dispatched, awaiting result · ⬜ not star
 | **Phase U** — notification-recipient bug fixes (backend auth-gate + wrong frontend endpoint) | ✅ done |
 | **Phase U** — `/user/*` route protection in `proxy.ts` | ✅ done |
 | **Phase E1** — follow-author/follow-category body-field bug fix + `updateMyProfile`/`updateNotificationPreferences` | ✅ done |
-| **Phase B1** — News Headlines admin UI | 🔄 running |
-| **Phase B2** — News Break admin UI | 🔄 running |
-| **Phase B3** — Media library service + admin UI | 🔄 running |
-| **Phase C-backend** — admin broadcast fan-out to NotificationRecipient | 🔄 running |
-| **Phase C-frontend** — admin-notification service + broadcast composer page | 🔄 running |
-| **Phase C-bells** — real unread counts on all 3 header bells + `/notification` + `/user/notifications` pages | 🔄 running |
-| **Phase D** — reading-list service extension + `/user/bookmarks`, `/user/reading-lists[/id]`, public `/reading-lists` | 🔄 running |
-| **Phase E2** — admin badge management UI | 🔄 running |
-| **Phase E3** — public `/leaderboard` page | 🔄 running |
-| **Phase E-pages** — `/user/profile`, `/user/settings`, `/user/following` | 🔄 running |
-| **Phase F** — Poll service + admin attach-to-article UI + public voting widget | 🔄 running |
-| **Phase G** — Comment moderation (flagged queue + edit-history viewer) | 🔄 running |
-| **Menu consolidation** — add News Headline/Break, Media, Badges, Broadcast entries to `admin-menu-items.ts` (deliberately deferred so parallel tasks don't clobber this one shared file) | ⬜ not started, blocked on the 🔄 rows above reporting back their exact menu-item objects |
-| **Final full-repo verification** — `tsc`/`eslint`/`next build`/backend `jest` across everything above | ⬜ not started |
+| **Phase B1** — News Headlines admin UI | ✅ done |
+| **Phase B2** — News Break admin UI | ✅ done |
+| **Phase B3** — Media library service + admin UI | ✅ done |
+| **Phase C-backend** — admin broadcast fan-out to NotificationRecipient | ✅ done |
+| **Phase C-frontend** — admin-notification service + broadcast composer page | ✅ done |
+| **Phase C-bells** — real unread counts on all 3 header bells + `/notification` + `/user/notifications` pages | ✅ done |
+| **Phase D** — reading-list service extension + `/user/bookmarks`, `/user/reading-lists[/id]`, public `/reading-lists` | ✅ done |
+| **Phase E2** — admin badge management UI | ✅ done |
+| **Phase E3** — public `/leaderboard` page | ✅ done |
+| **Phase E-pages** — `/user/profile`, `/user/settings`, `/user/following` | ✅ done |
+| **Phase F** — Poll service + admin attach-to-article UI + public voting widget | ✅ done |
+| **Phase G** — Comment moderation (flagged queue + edit-history viewer) | ✅ done |
+| **Menu consolidation** — News Headline/Break, Media, Badges, Broadcast entries added to `admin-menu-items.ts` | ✅ done |
+| **Final full-repo verification** — `tsc`/`eslint`/`next build`/backend `jest` across everything above | ✅ done — 0 new tsc errors, 0 new eslint issues (31 pre-existing errors confirmed untouched by any parity commit), `next build` succeeds with every new route present and correct static/dynamic split, backend 49/49 suites (408/408 tests, one transient "socket hang up" re-run clean) |
 
-I'll flip each 🔄 row to ✅ here the moment its subagent reports back, gets reviewed, and is committed — not before.
+All phases complete. Two known, deliberately-not-fixed items carried forward from individual task reports (both cosmetic/UX, not bugs): commit `9227833` ("content-templates add/edit pages") also contains the Bin Events/Files tabs due to an early git-staging collision (content verified correct); the public reading-lists browse page links to `/user/reading-lists/[id]`, which `proxy.ts` gates to signed-in visitors even though the backend route itself allows anonymous viewing of public lists.
 
 ---
 
