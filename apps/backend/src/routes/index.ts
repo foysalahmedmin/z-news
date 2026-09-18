@@ -6,6 +6,7 @@ import BookmarkRoutes from '../modules/bookmark/bookmark.route';
 import categoryRoutes from '../modules/category/category.route';
 import { EnhancedCommentRoutes } from '../modules/comment/comment-enhanced.route';
 import CommentRoutes from '../modules/comment/comment.route';
+import DashboardRoutes from '../modules/dashboard/dashboard.route';
 import eventRoutes from '../modules/event/event.route';
 import fileRoutes from '../modules/file/file.route';
 import guestRoutes from '../modules/guest/guest.route';
@@ -82,6 +83,10 @@ const moduleRoutes = [
   {
     path: '/view',
     route: ViewRoutes,
+  },
+  {
+    path: '/dashboard',
+    route: DashboardRoutes,
   },
   {
     path: '/media',
