@@ -92,11 +92,41 @@ graph TB
 
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/capabilities-mindmap-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset=".github/assets/capabilities-mindmap-light.svg">
-  <img alt="Z-News platform capabilities mindmap: Editorial, Community, Gamification, Notifications, Analytics, and Platform" src=".github/assets/capabilities-mindmap-light.svg" width="850">
-</picture>
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e0e0e0', 'primaryBorderColor': '#b0b0b0', 'primaryTextColor': '#1a1a1a', 'lineColor': '#999999', 'secondaryColor': '#e8e8e8', 'tertiaryColor': '#d8d8d8', 'cScale0': '#e8e8e8', 'cScale1': '#e0e0e0', 'cScale2': '#d8d8d8', 'cScale3': '#e8e8e8', 'cScale4': '#e0e0e0', 'cScale5': '#d8d8d8', 'cScale6': '#e8e8e8', 'cScale7': '#e0e0e0', 'cScale8': '#d8d8d8', 'cScale9': '#e8e8e8', 'cScale10': '#e0e0e0', 'cScale11': '#d8d8d8', 'cScaleLabel0': '#1a1a1a', 'cScaleLabel1': '#1a1a1a', 'cScaleLabel2': '#1a1a1a', 'cScaleLabel3': '#1a1a1a', 'cScaleLabel4': '#1a1a1a', 'cScaleLabel5': '#1a1a1a', 'cScaleLabel6': '#1a1a1a', 'cScaleLabel7': '#1a1a1a', 'cScaleLabel8': '#1a1a1a', 'cScaleLabel9': '#1a1a1a', 'cScaleLabel10': '#1a1a1a', 'cScaleLabel11': '#1a1a1a'}}}%%
+mindmap
+  root((Z-News))
+    Editorial
+      Article lifecycle (draft→published→archived)
+      Multi-stage approval workflow
+      Version history / audit trail
+      Headlines & Breaking News
+      Content templates
+    Community
+      Threaded comments + guest participation
+      5-type reactions
+      Polls, incl. anonymous voting
+      Bookmarks & public reading lists
+    Gamification
+      Badges (criteria-based, auto or manual award)
+      Reputation score
+      Public leaderboard
+      Follow authors / categories / topics
+    Notifications
+      Per-user inbox
+      Admin broadcast composer
+      Web / push / email channels
+    Analytics
+      Admin-tier dashboard
+      Editorial-tier dashboard
+      Reader-tier dashboard
+      Consolidated, cached aggregation endpoints
+    Platform
+      RBAC — 7 roles + guest
+      Redis caching
+      Cloud + local file storage
+      Optional RabbitMQ / Kafka
+```
 
 </div>
 
