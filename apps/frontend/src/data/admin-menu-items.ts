@@ -93,6 +93,27 @@ export const items: TItem[] = [
     ],
   },
   {
+    roles: ["super-admin", "admin", "editor", "author", "contributor"],
+    icon: "image",
+    path: "media",
+    name: "Media",
+    routeType: "layout",
+    menuType: "item-without-children",
+    children: [
+      { index: true, name: "Media", menuType: "invisible" },
+      {
+        roles: ["super-admin", "admin", "editor", "author"],
+        path: "add",
+        menuType: "invisible",
+      },
+      {
+        roles: ["super-admin", "admin", "editor"],
+        path: "edit/:id",
+        menuType: "invisible",
+      },
+    ],
+  },
+  {
     roles: ["super-admin", "admin", "author", "editor"],
     menuType: "title",
     name: "News",
@@ -124,6 +145,21 @@ export const items: TItem[] = [
     ],
   },
   {
+    roles: ["super-admin", "admin", "author", "editor"],
+    icon: "megaphone",
+    path: "news-headline",
+    name: "News Headlines",
+    routeType: "layout",
+    menuType: "item-without-children",
+    children: [{ index: true, name: "News Headlines", menuType: "invisible" }],
+  },
+  {
+    roles: ["super-admin", "admin", "author", "editor"],
+    icon: "radio",
+    path: "news-break",
+    name: "News Break",
+  },
+  {
     roles: ["super-admin", "admin"],
     icon: "layout-template",
     path: "content-templates",
@@ -147,6 +183,12 @@ export const items: TItem[] = [
     name: "Reactions",
   },
   {
+    roles: ["super-admin", "admin"],
+    icon: "award",
+    path: "badges",
+    name: "Badges",
+  },
+  {
     roles: [
       "super-admin",
       "admin",
@@ -162,6 +204,12 @@ export const items: TItem[] = [
     icon: "bell",
     path: "notifications",
     name: "Notifications",
+  },
+  {
+    roles: ["super-admin", "admin"],
+    icon: "megaphone",
+    path: "notifications-broadcast",
+    name: "Broadcast",
   },
   {
     roles: ["super-admin", "admin"],
