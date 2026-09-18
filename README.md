@@ -93,7 +93,7 @@ graph TB
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e0e0e0', 'primaryBorderColor': '#b0b0b0', 'primaryTextColor': '#1a1a1a', 'lineColor': '#999999', 'secondaryColor': '#e8e8e8', 'tertiaryColor': '#d8d8d8', 'cScale0': '#e8e8e8', 'cScale1': '#e0e0e0', 'cScale2': '#d8d8d8', 'cScale3': '#e8e8e8', 'cScale4': '#e0e0e0', 'cScale5': '#d8d8d8', 'cScale6': '#e8e8e8', 'cScale7': '#e0e0e0', 'cScale8': '#d8d8d8', 'cScale9': '#e8e8e8', 'cScale10': '#e0e0e0', 'cScale11': '#d8d8d8', 'cScaleLabel0': '#1a1a1a', 'cScaleLabel1': '#1a1a1a', 'cScaleLabel2': '#1a1a1a', 'cScaleLabel3': '#1a1a1a', 'cScaleLabel4': '#1a1a1a', 'cScaleLabel5': '#1a1a1a', 'cScaleLabel6': '#1a1a1a', 'cScaleLabel7': '#1a1a1a', 'cScaleLabel8': '#1a1a1a', 'cScaleLabel9': '#1a1a1a', 'cScaleLabel10': '#1a1a1a', 'cScaleLabel11': '#1a1a1a'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#3a3a3a', 'primaryBorderColor': '#6a6a6a', 'primaryTextColor': '#eaeaea', 'lineColor': '#8a8a8a', 'secondaryColor': '#333333', 'tertiaryColor': '#2a2a2a', 'cScale0': '#3a3a3a', 'cScale1': '#424242', 'cScale2': '#484848', 'cScale3': '#3a3a3a', 'cScale4': '#424242', 'cScale5': '#484848', 'cScale6': '#3a3a3a', 'cScale7': '#424242', 'cScale8': '#484848', 'cScale9': '#3a3a3a', 'cScale10': '#424242', 'cScale11': '#484848', 'cScaleLabel0': '#eaeaea', 'cScaleLabel1': '#eaeaea', 'cScaleLabel2': '#eaeaea', 'cScaleLabel3': '#eaeaea', 'cScaleLabel4': '#eaeaea', 'cScaleLabel5': '#eaeaea', 'cScaleLabel6': '#eaeaea', 'cScaleLabel7': '#eaeaea', 'cScaleLabel8': '#eaeaea', 'cScaleLabel9': '#eaeaea', 'cScaleLabel10': '#eaeaea', 'cScaleLabel11': '#eaeaea'}}}%%
 mindmap
   root((Z-News))
     Editorial
