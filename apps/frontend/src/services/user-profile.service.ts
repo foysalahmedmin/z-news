@@ -37,6 +37,53 @@ export const getMyProfile = async (): Promise<TProfileResponse> => {
   return response.json();
 };
 
+// ──────────────────────────────────────────────── UPDATE MY PROFILE
+export const updateMyProfile = async (payload: {
+  bio?: string;
+  location?: string;
+  website?: string;
+  social_links?: {
+    twitter?: string;
+    facebook?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
+}): Promise<TProfileResponse> => {
+  const response = await fetch(`${BASE}/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
+    },
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+};
+
+// ──────────────────────────────────────────────── UPDATE NOTIFICATION PREFERENCES
+export const updateNotificationPreferences = async (payload: {
+  notification_preferences?: {
+    email_notifications?: boolean;
+    push_notifications?: boolean;
+    comment_replies?: boolean;
+    article_updates?: boolean;
+    newsletter?: boolean;
+  };
+  email_frequency?: "instant" | "daily" | "weekly" | "never";
+}): Promise<TProfileResponse> => {
+  const response = await fetch(`${BASE}/me/notifications`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
+    },
+    body: JSON.stringify(payload),
+  });
+  return response.json();
+};
+
 // ──────────────────────────────────────────────── GET PUBLIC PROFILE
 export const getPublicProfile = async (
   userId: string,
@@ -60,7 +107,7 @@ export const followAuthor = async (
       "Content-Type": "application/json",
       ...(await getAuthHeaders()),
     },
-    body: JSON.stringify({ authorId }),
+    body: JSON.stringify({ author_id: authorId }),
   });
   return response.json();
 };
@@ -88,7 +135,7 @@ export const followCategory = async (
       "Content-Type": "application/json",
       ...(await getAuthHeaders()),
     },
-    body: JSON.stringify({ categoryId }),
+    body: JSON.stringify({ category_id: categoryId }),
   });
   return response.json();
 };
