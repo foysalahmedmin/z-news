@@ -15,7 +15,7 @@
 Z-News is an end-to-end news portal: a public reading experience, a multi-stage editorial workflow for producing content, and role-based admin/reader dashboards for everyone from a `super-admin` down to an anonymous `guest`. Three roles use the system very differently, and the platform is built around that distinction rather than papering over it:
 
 - **Readers** browse, react, comment, bookmark, vote in polls, and track their own reputation/badges/reading lists on a personal dashboard.
-- **Editorial staff** (`author`/`contributor`/`editor`) write, review, and publish through a multi-stage approval workflow, with a dashboard tailored to *their own* content and moderation queue.
+- **Editorial staff** (`author`/`contributor`/`editor`) write, review, and publish through a multi-stage approval workflow, with a dashboard tailored to _their own_ content and moderation queue.
 - **Admins** (`admin`/`super-admin`) manage the whole platform — users, taxonomy, moderation, gamification, notifications — from a site-wide analytics dashboard.
 
 Every one of those experiences is served by the same Next.js app and the same Express API, gated by role rather than split into separate deployments.
@@ -96,38 +96,56 @@ graph TB
 
 ```mermaid
 %%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
-mindmap
-  root((Z-News))
-    Editorial
-      Article lifecycle (draft→published→archived)
-      Multi-stage approval workflow
-      Version history / audit trail
-      Headlines & Breaking News
-      Content templates
-    Community
-      Threaded comments + guest participation
-      5-type reactions
-      Polls, incl. anonymous voting
-      Bookmarks & public reading lists
-    Gamification
-      Badges (criteria-based, auto or manual award)
-      Reputation score
-      Public leaderboard
-      Follow authors / categories / topics
-    Notifications
-      Per-user inbox
-      Admin broadcast composer
-      Web / push / email channels
-    Analytics
-      Admin-tier dashboard
-      Editorial-tier dashboard
-      Reader-tier dashboard
-      Consolidated, cached aggregation endpoints
-    Platform
-      RBAC — 7 roles + guest
-      Redis caching
-      Cloud + local file storage
-      Optional RabbitMQ / Kafka
+graph TB
+    Root((Z-News))
+
+    Root --> Editorial
+    subgraph Editorial["Editorial"]
+        E1["Article lifecycle (draft to published to archived)"]
+        E2[Multi-stage approval workflow]
+        E3[Version history / audit trail]
+        E4[Headlines & Breaking News]
+        E5[Content templates]
+    end
+
+    Root --> Community
+    subgraph Community["Community"]
+        C1[Threaded comments + guest participation]
+        C2[5-type reactions]
+        C3["Polls, incl. anonymous voting"]
+        C4[Bookmarks & public reading lists]
+    end
+
+    Root --> Gamification
+    subgraph Gamification["Gamification"]
+        G1["Badges (criteria-based, auto or manual award)"]
+        G2[Reputation score]
+        G3[Public leaderboard]
+        G4[Follow authors / categories / topics]
+    end
+
+    Root --> Notifications
+    subgraph Notifications["Notifications"]
+        N1[Per-user inbox]
+        N2[Admin broadcast composer]
+        N3[Web / push / email channels]
+    end
+
+    Root --> Analytics
+    subgraph Analytics["Analytics"]
+        A1[Admin-tier dashboard]
+        A2[Editorial-tier dashboard]
+        A3[Reader-tier dashboard]
+        A4[Consolidated, cached aggregation endpoints]
+    end
+
+    Root --> Platform
+    subgraph Platform["Platform"]
+        P1[RBAC — 7 roles + guest]
+        P2[Redis caching]
+        P3[Cloud + local file storage]
+        P4[Optional RabbitMQ / Kafka]
+    end
 ```
 
 </div>
@@ -168,13 +186,13 @@ This is enforced end-to-end, not just visually: the frontend's `proxy.ts` middle
 
 ## Tech Stack Overview
 
-| Layer | Stack |
-| :--- | :--- |
+| Layer        | Stack                                                                                                                                          |
+| :----------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Frontend** | Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 4 · `@tanstack/react-query` · `react-hook-form` + `zod` · `recharts` |
-| **Backend** | Express 5 · TypeScript · MongoDB + Mongoose 8 · Redis · Socket.io · Zod |
-| **Auth** | JWT access/refresh rotation, httpOnly refresh cookie, Google OAuth, guest sessions |
-| **Infra** | Docker (dev/full/prod stacks), nginx, Prometheus/Grafana monitoring, optional RabbitMQ/Kafka |
-| **Testing** | Jest — 49 suites / 408 tests (backend) |
+| **Backend**  | Express 5 · TypeScript · MongoDB + Mongoose 8 · Redis · Socket.io · Zod                                                                        |
+| **Auth**     | JWT access/refresh rotation, httpOnly refresh cookie, Google OAuth, guest sessions                                                             |
+| **Infra**    | Docker (dev/full/prod stacks), nginx, Prometheus/Grafana monitoring, optional RabbitMQ/Kafka                                                   |
+| **Testing**  | Jest — 49 suites / 408 tests (backend)                                                                                                         |
 
 Full per-app breakdowns (dependencies, directory maps, ER diagrams, sequence diagrams) live in each app's own README — this document is the project-level map, not a duplicate of either.
 
@@ -212,11 +230,11 @@ pnpm lint:fix
 
 ## Documentation Map
 
-| Document | Covers |
-| :--- | :--- |
-| [`apps/backend/README.md`](apps/backend/README.md) | Every domain module, security posture, full ER diagram, API endpoint reference, workflow sequence diagrams, production checklist |
-| [`apps/frontend/README.md`](apps/frontend/README.md) | Route/role architecture, dual API client design, auth flow, full page routing matrix, directory map |
-| [`docs/superpowers/`](docs/superpowers/) | Design specs and implementation plans for major features (role-based dashboards, backend-frontend parity work), kept as historical record of *why* things are shaped the way they are |
+| Document                                              | Covers                                                                                                                             |
+| :----------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| [`apps/backend/README.md`](apps/backend/README.md)     | Every domain module, security posture, full ER diagram, API endpoint reference, workflow sequence diagrams, production checklist |
+| [`apps/frontend/README.md`](apps/frontend/README.md)   | Route/role architecture, dual API client design, auth flow, full page routing matrix, directory map                              |
+| [`docs/superpowers/`](docs/superpowers/)                | Design specs and implementation plans for major features (role-based dashboards, backend-frontend parity work) — historical record of *why* things are shaped the way they are |
 
 ---
 
