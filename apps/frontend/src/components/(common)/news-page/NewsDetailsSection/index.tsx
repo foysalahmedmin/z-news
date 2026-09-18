@@ -17,6 +17,7 @@ import Print from "../NewsActionSection/print";
 import Reaction from "../NewsActionSection/reaction";
 import Share from "../NewsActionSection/share";
 import View from "../NewsActionSection/view";
+import PollWidget from "../PollWidget";
 import RecentNewsSection from "../RecentNewsSection";
 import SuggestionNews from "../SuggestionNewsSection";
 import FollowAuthorButton from "./FollowAuthorButton";
@@ -390,6 +391,9 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
               </div>
             </div>
           )}
+
+          {/* Poll - null if this article has no attached poll */}
+          <PollWidget newsId={news?._id} />
         </div>
       </article>
       <div className="hidden xl:col-span-3 xl:block 2xl:col-span-3">

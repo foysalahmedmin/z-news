@@ -35,6 +35,7 @@ import type {
 import ArticleDetails from "./ArticleDetails";
 import CategoriesAndTags from "./CategoriesAndTags";
 import ContentEditor from "./ContentEditor";
+import PollSelector from "./PollSelector";
 import PublishSettings from "./PublishSettings";
 import { newsSchema, type NewsFormData } from "./schema";
 import TemplateSelector from "./TemplateSelector";
@@ -362,6 +363,9 @@ const NewsArticleForm = ({ mode, newsId }: NewsArticleFormProps) => {
           <ContentEditor />
           <CategoriesAndTags />
           <PublishSettings />
+          {/* A Poll references its article via `news` on the Poll document,
+          so it needs the article to already have an id -- edit mode only. */}
+          {isEdit && newsId && <PollSelector newsId={newsId} />}
         </div>
 
         <hr />
