@@ -92,40 +92,11 @@ graph TB
 
 <div align="center">
 
-```mermaid
-mindmap
-  root((Z-News))
-    Editorial
-      Article lifecycle (draft→published→archived)
-      Multi-stage approval workflow
-      Version history / audit trail
-      Headlines & Breaking News
-      Content templates
-    Community
-      Threaded comments + guest participation
-      5-type reactions
-      Polls, incl. anonymous voting
-      Bookmarks & public reading lists
-    Gamification
-      Badges (criteria-based, auto or manual award)
-      Reputation score
-      Public leaderboard
-      Follow authors / categories / topics
-    Notifications
-      Per-user inbox
-      Admin broadcast composer
-      Web / push / email channels
-    Analytics
-      Admin-tier dashboard
-      Editorial-tier dashboard
-      Reader-tier dashboard
-      Consolidated, cached aggregation endpoints
-    Platform
-      RBAC — 7 roles + guest
-      Redis caching
-      Cloud + local file storage
-      Optional RabbitMQ / Kafka
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/capabilities-mindmap-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/capabilities-mindmap-light.svg">
+  <img alt="Z-News platform capabilities mindmap: Editorial, Community, Gamification, Notifications, Analytics, and Platform" src=".github/assets/capabilities-mindmap-light.svg" width="850">
+</picture>
 
 </div>
 
