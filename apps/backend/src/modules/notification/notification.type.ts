@@ -1,4 +1,5 @@
 import { Document, Model, Types } from 'mongoose';
+import { TRole } from '../../types/jsonwebtoken.type';
 
 export type TStatus = 'active' | 'inactive' | 'archived';
 export type TPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -25,6 +26,10 @@ export type TNotification = {
   expires_at?: Date;
   status?: TStatus;
   is_deleted?: boolean;
+  audience?: {
+    roles?: TRole[];
+    user_ids?: string[];
+  };
 };
 
 export interface TNotificationDocument extends TNotification, Document {

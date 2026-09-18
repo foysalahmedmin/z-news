@@ -14,6 +14,15 @@ export const typeEnum = z.enum([
   'comment',
   'reply',
 ]);
+export const roleEnum = z.enum([
+  'super-admin',
+  'admin',
+  'editor',
+  'author',
+  'contributor',
+  'subscriber',
+  'user',
+]);
 
 const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
   message: 'Invalid ID format',
@@ -38,6 +47,12 @@ export const createNotificationValidationSchema = z.object({
     sender: idSchema,
     expires_at: z.coerce.date().optional(),
     status: statusEnum.optional(),
+    audience: z
+      .object({
+        roles: z.array(roleEnum).optional(),
+        user_ids: z.array(idSchema).optional(),
+      })
+      .optional(),
   }),
 });
 

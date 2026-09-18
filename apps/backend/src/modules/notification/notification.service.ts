@@ -23,6 +23,37 @@ export const createNotification = async (
 ): Promise<TNotification> => {
   const result = await NotificationRepository.create(data);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+
+  const roles = data.audience?.roles;
+  const userIds = data.audience?.user_ids;
+
+  if ((roles && roles.length) || (userIds && userIds.length)) {
+    try {
+      const recipientIds = new Set<string>();
+
+      if (roles && roles.length) {
+        const users = await User.find({ role: { $in: roles } }, '_id');
+        users.forEach((user) => recipientIds.add(user._id.toString()));
+      }
+
+      if (userIds && userIds.length) {
+        userIds.forEach((userId) => recipientIds.add(userId));
+      }
+
+      if (recipientIds.size > 0) {
+        const recipients = Array.from(recipientIds).map((recipientId) => ({
+          notification: result._id,
+          recipient: recipientId,
+          is_read: false,
+        }));
+
+        await NotificationRecipient.insertMany(recipients);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fan out notification to recipients:', error);
+    }
+  }
+
   return result;
 };
 
