@@ -155,7 +155,6 @@ The system implements an industry-standard security posture to protect sensitive
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 graph TB
     Client[Web/Mobile Client]
     LB[Perimeter Load Balancer]
@@ -187,7 +186,6 @@ graph TB
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 graph LR
     Router[API Router]
     Mid[Security Middleware]
@@ -303,7 +301,6 @@ src/
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 erDiagram
     %% Core Identity & Community
     User ||--o{ News : "authors"
@@ -589,7 +586,6 @@ Standardization is enforced across all domain modules:
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 sequenceDiagram
     participant Editor as Author/Admin
     participant API as Z-News API
@@ -622,7 +618,6 @@ sequenceDiagram
 <div align="center">
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': 'transparent', 'primaryBorderColor': '#6b7280', 'primaryTextColor': '#6b7280', 'lineColor': '#6b7280', 'secondaryColor': 'transparent', 'tertiaryColor': 'transparent', 'mainBkg': 'transparent', 'background': 'transparent', 'nodeBorder': '#6b7280', 'clusterBkg': 'transparent', 'clusterBorder': '#6b7280', 'edgeLabelBackground': 'transparent', 'cScale0': 'transparent', 'cScale1': 'transparent', 'cScale2': 'transparent', 'cScale3': 'transparent', 'cScale4': 'transparent', 'cScale5': 'transparent', 'cScale6': 'transparent', 'cScale7': 'transparent', 'cScale8': 'transparent', 'cScale9': 'transparent', 'cScale10': 'transparent', 'cScale11': 'transparent', 'cScaleLabel0': '#6b7280', 'cScaleLabel1': '#6b7280', 'cScaleLabel2': '#6b7280', 'cScaleLabel3': '#6b7280', 'cScaleLabel4': '#6b7280', 'cScaleLabel5': '#6b7280', 'cScaleLabel6': '#6b7280', 'cScaleLabel7': '#6b7280', 'cScaleLabel8': '#6b7280', 'cScaleLabel9': '#6b7280', 'cScaleLabel10': '#6b7280', 'cScaleLabel11': '#6b7280'}}}%%
 sequenceDiagram
     participant Author
     participant Editor
