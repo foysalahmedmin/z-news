@@ -3,6 +3,7 @@
 import api from "@/lib/admin-api";
 import type {
   TBulkUpdateCommentPayload,
+  TCommentHistoryResponse,
   TCommentResponse,
   TCommentsResponse,
   TCreateCommentPayload,
@@ -62,6 +63,18 @@ export async function fetchFlaggedComments(query?: {
     params: query,
     withCredentials: true,
   });
+  return response.data;
+}
+
+export async function fetchCommentHistory(
+  commentId: string,
+): Promise<TCommentHistoryResponse> {
+  const response = await api.get(
+    `/api/comment-enhanced/${commentId}/history`,
+    {
+      withCredentials: true,
+    },
+  );
   return response.data;
 }
 

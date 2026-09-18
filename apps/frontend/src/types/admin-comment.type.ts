@@ -2,7 +2,7 @@
 
 import type { Response } from "./response.type";
 
-export type TCommentStatus = "pending" | "approved" | "rejected";
+export type TCommentStatus = "pending" | "approved" | "rejected" | "flagged";
 
 export type TComment = {
   _id: string;
@@ -57,3 +57,18 @@ export type TBulkUpdateCommentPayload = {
 
 export type TCommentResponse = Response<TComment>;
 export type TCommentsResponse = Response<TComment[]>;
+
+// Edit history (GET /api/comment-enhanced/:comment_id/history)
+export type TCommentHistoryEntry = {
+  content: string;
+  edited_at: string;
+};
+
+export type TCommentHistory = {
+  current_content: string;
+  is_edited?: boolean;
+  edited_at?: string;
+  edit_history: TCommentHistoryEntry[];
+};
+
+export type TCommentHistoryResponse = Response<TCommentHistory>;
