@@ -43,6 +43,7 @@ Each app was originally a separate repository (frontend, backend, and a standalo
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 graph TB
     subgraph "Clients"
         Reader[Reader / Public Visitor]
@@ -94,6 +95,7 @@ graph TB
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 mindmap
   root((Z-News))
     Editorial
@@ -137,6 +139,7 @@ mindmap
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 graph LR
     subgraph Roles
         SA[super-admin]

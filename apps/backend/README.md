@@ -155,6 +155,7 @@ The system implements an industry-standard security posture to protect sensitive
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 graph TB
     Client[Web/Mobile Client]
     LB[Perimeter Load Balancer]
@@ -186,6 +187,7 @@ graph TB
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 graph LR
     Router[API Router]
     Mid[Security Middleware]
@@ -301,6 +303,7 @@ src/
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 erDiagram
     %% Core Identity & Community
     User ||--o{ News : "authors"
@@ -586,6 +589,7 @@ Standardization is enforced across all domain modules:
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 sequenceDiagram
     participant Editor as Author/Admin
     participant API as Z-News API
@@ -618,6 +622,7 @@ sequenceDiagram
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 sequenceDiagram
     participant Author
     participant Editor

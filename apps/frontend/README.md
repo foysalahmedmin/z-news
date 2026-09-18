@@ -94,6 +94,7 @@ Everything under `(dashboard)/user` — open to any signed-in role (not just rea
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 graph TB
     Visitor[Any Visitor] --> Primary["(primary) — public site"]
     Visitor --> AuthPages["auth/ — sign-in, sign-up, password reset"]
@@ -125,6 +126,7 @@ graph TB
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 sequenceDiagram
     participant User
     participant Next as Next.js (Server/Client)
@@ -231,6 +233,7 @@ src/
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 sequenceDiagram
     participant Admin as Signed-in User
     participant Page as /admin/page.tsx
@@ -257,6 +260,7 @@ sequenceDiagram
 <div align="center">
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'lineColor': '#555555', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e5e5e5'}}}%%
 sequenceDiagram
     participant User
     participant Next as Next.js Server
