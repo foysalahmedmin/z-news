@@ -182,11 +182,14 @@ export const unfollowTopic = async (
 };
 
 // ──────────────────────────────────────────────── TOP USERS BY REPUTATION
-export const getTopUsers = async (): Promise<{
+export const getTopUsers = async (
+  limit?: number,
+): Promise<{
   data: TUserProfile[];
   success: boolean;
 }> => {
-  const response = await fetch(`${BASE}/top`, {
+  const url = limit ? `${BASE}/top?limit=${limit}` : `${BASE}/top`;
+  const response = await fetch(url, {
     method: "GET",
     credentials: "include",
     cache: "no-cache",
