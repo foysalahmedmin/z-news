@@ -1,4 +1,4 @@
-# Z-News Server
+# Z-News Backend
 
 A high-performance, enterprise-grade news portal backend that orchestrates dynamic news delivery, hierarchical category management, real-time engagement, editorial workflow pipelines, and multi-channel notification systems. Engineered for high-concurrency and data integrity, it serves as the robust backbone for the Z-News ecosystem.
 
@@ -6,7 +6,7 @@ A high-performance, enterprise-grade news portal backend that orchestrates dynam
 
 ## Table of Contents
 
-- [Z-News Server](#z-news-server)
+- [Z-News Backend](#z-news-backend)
   - [Table of Contents](#table-of-contents)
   - [Core Modules and Features](#core-modules-and-features)
     - [Authentication and Security](#authentication-and-security)
@@ -101,7 +101,7 @@ Each endpoint runs its aggregation pipelines against the existing News/User/Comm
 | Runtime Validation      | Zod v3.x (end-to-end type safety)                    |
 | Email Delivery          | Nodemailer v7.x / Resend (configurable provider)     |
 | Message Brokers         | RabbitMQ (amqplib) + Kafka (kafkajs) — optional      |
-| Security Infrastructure | bcrypt, jsonwebtoken, helmet, express-rate-limit      |
+| Security Infrastructure | bcrypt, jsonwebtoken, helmet, express-rate-limit     |
 | Testing                 | Jest with @swc/jest (49 suites, 408 tests)           |
 
 ---
