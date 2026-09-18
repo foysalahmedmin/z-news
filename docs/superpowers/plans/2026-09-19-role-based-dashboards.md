@@ -38,7 +38,7 @@ Every model in this codebase uses **explicit snake_case timestamps** (`{ created
 **Files:**
 - Create: `apps/backend/src/modules/dashboard/dashboard.type.ts`
 
-- [ ] **Step 1: Write the type file**
+- [x] **Step 1: Write the type file**
 
 ```ts
 // apps/backend/src/modules/dashboard/dashboard.type.ts
@@ -155,12 +155,12 @@ export type TReaderDashboardData = {
 };
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `cd apps/backend && npx tsc --noEmit`
 Expected: no new errors (this file has no logic, just types — it can't fail on its own, but confirm the command still runs clean before moving on).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/backend/src/modules/dashboard/dashboard.type.ts
@@ -172,7 +172,7 @@ git commit -m "feat: add dashboard module response types"
 **Files:**
 - Create: `apps/backend/src/modules/dashboard/dashboard.service.ts`
 
-- [ ] **Step 1: Write the service, starting with shared helpers and the Admin dashboard function**
+- [x] **Step 1: Write the service, starting with shared helpers and the Admin dashboard function**
 
 ```ts
 // apps/backend/src/modules/dashboard/dashboard.service.ts
@@ -360,12 +360,12 @@ export const getAdminDashboardData = async (): Promise<TAdminDashboardData> => {
 
 Note: `ViewServices.getTotalViewCount()` returns `{ total: number }` and `getViewTrends(days)` returns `TTrendPoint[]`-shaped objects already (`{date, count}`) per the existing `view.service.ts` code — both reused as-is, not reimplemented.
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `cd apps/backend && npx tsc --noEmit`
 Expected: 0 new errors (compare against the pre-existing ~295-line baseline this repo already has — confirm none of the new lines are in `dashboard.service.ts`).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/backend/src/modules/dashboard/dashboard.service.ts
@@ -377,7 +377,7 @@ git commit -m "feat: dashboard service -- shared helpers + Admin tier aggregatio
 **Files:**
 - Modify: `apps/backend/src/modules/dashboard/dashboard.service.ts`
 
-- [ ] **Step 1: Append the Editorial and Reader tier functions**
+- [x] **Step 1: Append the Editorial and Reader tier functions**
 
 ```ts
 // Append to apps/backend/src/modules/dashboard/dashboard.service.ts,
@@ -574,12 +574,12 @@ export const getReaderDashboardData = async (
 
 Note: `getMyContentPerformance` uses a dynamic `await import('../view/view.model')` for the `View` model purely to avoid an unused top-level import in `getAdminDashboardData`-only scenarios — if this feels inconsistent once written, hoist `import { View } from '../view/view.model';` to the top of the file alongside the other model imports instead (cleaner; do this rather than keep the dynamic import — the dynamic-import form above is written defensively in case `View` isn't already imported elsewhere in the file, but the top-level import is the correct final form and matches every other model import in this file).
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `cd apps/backend && npx tsc --noEmit`
 Expected: 0 new errors in `dashboard.service.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/backend/src/modules/dashboard/dashboard.service.ts
@@ -593,7 +593,7 @@ git commit -m "feat: dashboard service -- Editorial and Reader tier aggregation"
 - Create: `apps/backend/src/modules/dashboard/dashboard.route.ts`
 - Modify: `apps/backend/src/routes/index.ts`
 
-- [ ] **Step 1: Write the controller**
+- [x] **Step 1: Write the controller**
 
 ```ts
 // apps/backend/src/modules/dashboard/dashboard.controller.ts
@@ -649,7 +649,7 @@ export const getReaderDashboard = catchAsync(async (req, res) => {
 });
 ```
 
-- [ ] **Step 2: Write the route**
+- [x] **Step 2: Write the route**
 
 ```ts
 // apps/backend/src/modules/dashboard/dashboard.route.ts
@@ -690,7 +690,7 @@ const DashboardRoutes = router;
 export default DashboardRoutes;
 ```
 
-- [ ] **Step 3: Mount the route**
+- [x] **Step 3: Mount the route**
 
 In `apps/backend/src/routes/index.ts`, add the import alongside the other module imports (alphabetically, after `CommentRoutes`/`EnhancedCommentRoutes` and before `eventRoutes` — matching the file's existing alphabetical-ish ordering):
 
@@ -707,14 +707,14 @@ And add to the `moduleRoutes` array (placement doesn't affect behavior, but keep
   },
 ```
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```bash
 cd apps/backend && npx tsc --noEmit && npx jest
 ```
 Expected: 0 new tsc errors, 49/49 test suites still passing (no existing test touches this new module, so nothing should break).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/backend/src/modules/dashboard/dashboard.controller.ts apps/backend/src/modules/dashboard/dashboard.route.ts apps/backend/src/routes/index.ts
@@ -731,7 +731,7 @@ git commit -m "feat: dashboard controller, routes, and mount -- GET /api/dashboa
 - Create: `apps/frontend/src/types/dashboard.type.ts`
 - Create: `apps/frontend/src/services/dashboard.service.ts`
 
-- [ ] **Step 1: Write the frontend types** (mirroring the backend response shapes from Task 1 exactly)
+- [x] **Step 1: Write the frontend types** (mirroring the backend response shapes from Task 1 exactly)
 
 ```ts
 // apps/frontend/src/types/dashboard.type.ts
@@ -839,7 +839,7 @@ export type TEditorialDashboardResponse = Response<TEditorialDashboardData>;
 export type TReaderDashboardResponse = Response<TReaderDashboardData>;
 ```
 
-- [ ] **Step 2: Write the service**
+- [x] **Step 2: Write the service**
 
 `/admin`'s dashboard (both Admin and Editorial tiers) uses `@/lib/admin-api`, matching every other `/admin` page's convention. `/user`'s reader dashboard uses `@/lib/api`, matching every other `/user` page's convention (confirm this split against `apps/frontend/src/services/admin-event.service.ts` for the admin-api call style, and `apps/frontend/src/services/bookmark.service.ts` for the public api call style, before writing — both were already established in earlier phases of this same project).
 
@@ -871,14 +871,14 @@ export async function fetchReaderDashboard(): Promise<TReaderDashboardResponse> 
 
 (Adjust `adminApi.get`'s call shape and `api.get`'s call shape to match whatever Step 1's file-reads actually show — `admin-api` is axios-shaped (`response.data` is the parsed body directly), `api` is the `Fetch` wrapper class (`response.data` is also the parsed body per its `FetchResponse<T>` type) — both should end up as `response.data as T`, but verify against the real files rather than trusting this plan blindly, since it's easy to mix up call conventions between the two clients.)
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```bash
 cd apps/frontend && npx tsc --noEmit && npx eslint src/types/dashboard.type.ts src/services/dashboard.service.ts
 ```
 Expected: 0 errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/frontend/src/types/dashboard.type.ts apps/frontend/src/services/dashboard.service.ts
@@ -887,12 +887,12 @@ git commit -m "feat: frontend dashboard service and types"
 
 ---
 
-## Phases 3–6 (scope only — detailed immediately before each starts, same pattern used successfully for this project's earlier backend-frontend-parity plan)
+## Phases 3–6 — ✅ all complete
 
-- **Phase 3 — Admin tier frontend:** Make `apps/frontend/src/app/(dashboard)/admin/page.tsx` role-aware (read `useUser()`'s role, branch between `AdminTierDashboard` and `EditorialTierDashboard`). Build `AdminTierDashboard` under `admin/_components/`, composed of: existing `AdminStatisticsSection` extended with the 4 new stat cards (comments/reactions/pending/flagged) sourced from `fetchAdminDashboard()` instead of its current 4 separate parallel queries; existing `ChartAreaInteractiveSection` re-pointed at the new endpoint's `view_trends` (or left as-is if it's simpler to keep its own query — decide when detailing this phase); new `CategoryBreakdownChart` (bar chart, recharts, mirrors `ChartAreaInteractiveSection`'s `ChartContainer` usage); new `UserGrowthChart` (same pattern); new `UpcomingEventsWidget` (small card list); new `RecentActivityFeed` (row list with type-based icons). Delete `DataTableUserActivitiesSection/` (component + `user-activities-data.ts`) and its import in `page.tsx` entirely.
-- **Phase 4 — Editorial tier frontend:** Build `EditorialTierDashboard` reusing `CategoryBreakdownChart`/`RecentActivityFeed` from Phase 3 (shared components, not duplicated), plus new conditionally-rendered `MyContentPerformanceSection` (stat cards + personalized view-trend chart + top-articles mini-list, rendered only when `editorialData.my_content` is present in the response) and `ModerationQueueSection` (stat cards + queue list, rendered only when `editorialData.moderation_queue` is present).
-- **Phase 5 — Reader tier frontend:** Enrich `apps/frontend/src/app/(dashboard)/user/page.tsx` in place: keep the 3 existing stat cards (now optionally re-sourced from `fetchReaderDashboard()`'s `following` field for consistency, or left on their current individual queries — decide when detailing), add an `EngagementTrendChart` (line/area chart from `engagement_trend`), a `BadgeProgressWidget` (progress bars per badge from `badge_progress`), a `FollowingSummaryCard` (3 counts), and reuse `UpcomingEventsWidget` from Phase 3.
-- **Phase 6 — Cleanup and final verification:** Confirm `DataTableUserActivitiesSection` has zero remaining references anywhere (grep), confirm the 3 old separate-query patterns in `AdminStatisticsSection`/`ChartAreaInteractiveSection` are fully replaced (no dead/unused imports left behind), full-repo `tsc`/`eslint`/`next build` (frontend) + `tsc`/`jest` (backend), verify all 3 dashboard routes render correctly for each real role by checking the route table in a production build and confirming no new eslint errors outside this project's own files.
+- **Phase 3 — Admin tier frontend** ✅ (`fb51478`): `AdminStatisticsSection` and the new `TrendAreaChart`/`CategoryBreakdownChart`/`UpcomingEventsWidget`/`RecentActivityFeed` all now run off one `fetchAdminDashboard()` query composed in `page.tsx`. `ChartAreaInteractiveSection` and `DataTableUserActivitiesSection`/`user-activities-data.ts` (the 30 fictional users) deleted entirely. Role-branching deferred to Phase 4 by design (no `EditorialTierDashboard` existed yet).
+- **Phase 4 — Editorial tier frontend** ✅ (`ba37b81`): `EditorialTierDashboard` built, reusing `CategoryBreakdownChart`/`RecentActivityFeed` from Phase 3; new `MyContentPerformanceSection` (author/contributor) and `ModerationQueueSection` (editor/admin) render conditionally based on which fields the backend's role-aware response includes. `page.tsx` now branches between `AdminTierDashboard`/`EditorialTierDashboard` by role, extracted `AdminTierDashboard` out of Phase 3's inline `page.tsx` code with no behavior change.
+- **Phase 5 — Reader tier frontend** ✅ (`fdb75f4`): `/user/page.tsx` enriched with `TrendAreaChart` (engagement), new `BadgeProgressWidget` (wires the previously-unused `GET /api/badge/progress`), new `FollowingSummaryCard`, and reused `UpcomingEventsWidget` — all reusing Phase 3's components across the `admin`/`user` route-group boundary. The 3 pre-existing stat cards (notifications/bookmarks/reputation) were kept on their own separate queries since the consolidated reader endpoint genuinely doesn't compute those numbers — a deliberate, verified decision, not an oversight.
+- **Phase 6 — Cleanup and final verification** ✅: zero remaining references to any deleted fake-data file/component (grepped); backend `tsc` at the established 295-line pre-existing baseline, Jest 49/49 suites (408/408 tests); frontend `tsc` 0 errors, eslint 31 pre-existing errors confirmed unrelated to any file this project touched (0 new), `next build` succeeds with `/admin`, `/user`, and every other route present and the correct static/dynamic split preserved.
 
 ---
 
