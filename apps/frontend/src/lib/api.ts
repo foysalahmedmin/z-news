@@ -1,6 +1,90 @@
 import { ENV } from "@/config";
 import type { TUserState } from "@/types/state.type";
-import { getCookie } from "cookies-next/client";
+import { getCookie, setCookie } from "cookies-next/client";
+
+// Module-level in-memory storage for the access token. Never stored in document.cookie.
+let inMemoryToken: string | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+
+export const getAccessToken = (): string | null => inMemoryToken;
+
+export const setAccessToken = (token: string | null): void => {
+  inMemoryToken = token;
+};
+
+export const clearAccessToken = (): void => {
+  inMemoryToken = null;
+};
+
+export async function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${ENV.api_url}/api/auth/refresh-token`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        setAccessToken(null);
+        return null;
+      }
+
+      const json = await response.json();
+      const token = json?.data?.token;
+
+      if (token) {
+        setAccessToken(token);
+        if (json?.data?.info) {
+          const cookie = getCookie(USER_COOKIE_KEY);
+          if (cookie) {
+            try {
+              const user = JSON.parse(cookie as string);
+              const info = json.data.info;
+              const updated = {
+                ...user,
+                _id: info._id,
+                name: info.name,
+                email: info.email,
+                role: info.role,
+                image: info.image,
+                info,
+                isAuthenticated: true,
+              };
+              delete (updated as Record<string, unknown>).token;
+              setCookie(
+                USER_COOKIE_KEY,
+                JSON.stringify(updated),
+                getUserCookieOptions(),
+              );
+            } catch {}
+          }
+        }
+        return token;
+      }
+
+      setAccessToken(null);
+      return null;
+    } catch {
+      setAccessToken(null);
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
 
 // types.ts (separate file for interfaces)
 export interface FetchConfig {
@@ -189,7 +273,7 @@ export class Fetch {
 
   async request<T = any>(
     url: string,
-    options: RequestInit & NextFetchConfig = {},
+    options: RequestInit & NextFetchConfig & { _retry?: boolean } = {},
   ): Promise<FetchResponse<T>> {
     const processedConfig = await this.processRequest({
       url,
@@ -201,6 +285,28 @@ export class Fetch {
       fullUrl,
       processedConfig.options,
     );
+
+    if (
+      response.status === 401 &&
+      typeof window !== "undefined" &&
+      !options._retry &&
+      !url.includes("/api/auth/refresh-token") &&
+      !url.includes("/api/auth/signin") &&
+      !url.includes("/api/auth/logout") &&
+      getCookie(USER_COOKIE_KEY)
+    ) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        return this.request<T>(url, {
+          ...options,
+          _retry: true,
+          headers: {
+            ...this.convertHeaders(options.headers),
+            Authorization: newToken,
+          },
+        });
+      }
+    }
 
     return this.processResponse<T>(response, processedConfig);
   }
@@ -270,27 +376,43 @@ export const getUserCookieOptions = () => ({
   secure: typeof window !== "undefined" && window.location.protocol === "https:",
 });
 
-// Authorization header for the signed-in user, read from the "user" cookie
-// that useUser.tsx writes. Client-side only: on the server the root/client
-// getCookie has no request context and returns undefined, so server renders
-// (SSR/RSC/ISR) are always anonymous. Reading it there would need next/headers'
-// cookies(), which would turn every public page using this into a dynamic page.
+// Authorization header for the signed-in user, read from the in-memory access token.
+// Client-side only: on the server renders are always anonymous.
 export const getAuthHeaders = (): Record<string, string> => {
-  const cookie = getCookie(USER_COOKIE_KEY);
-  try {
-    const user = cookie ? (JSON.parse(cookie) as TUserState) : null;
-    return user?.token ? { Authorization: user.token } : {};
-  } catch {
+  if (typeof window === "undefined") {
     return {};
   }
+  const token = getAccessToken();
+  return token ? { Authorization: token } : {};
 };
 
 const api = new Fetch({ baseURL: ENV.api_url });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
+  let token = getAccessToken();
+
+  if (
+    !token &&
+    typeof window !== "undefined" &&
+    getCookie(USER_COOKIE_KEY) &&
+    !config.url.includes("/api/auth/")
+  ) {
+    token = await refreshAccessToken();
+  }
+
+  const authHeaders: Record<string, string> = token
+    ? { Authorization: token }
+    : {};
+
+  const internalSecretHeader: Record<string, string> =
+    typeof window === "undefined" && process.env.INTERNAL_API_SECRET
+      ? { "x-internal-secret": process.env.INTERNAL_API_SECRET }
+      : {};
+
   config.options.headers = {
     ...config.options.headers,
-    ...getAuthHeaders(),
+    ...authHeaders,
+    ...internalSecretHeader,
   };
   return config;
 });

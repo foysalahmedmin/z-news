@@ -1,7 +1,10 @@
 import { ENV } from "@/config";
-import { USER_COOKIE_KEY as COOKIE_KEY, getUserCookieOptions } from "@/lib/api";
-import { refreshToken } from "@/services/auth.service";
-import type { TUserState } from "@/types/state.type";
+import {
+  USER_COOKIE_KEY as COOKIE_KEY,
+  clearAccessToken,
+  getAccessToken,
+  refreshAccessToken,
+} from "@/lib/api";
 import type {
   AxiosError,
   AxiosInstance,
@@ -9,33 +12,14 @@ import type {
   InternalAxiosRequestConfig,
 } from "axios";
 import axios from "axios";
-import { deleteCookie, getCookie, setCookie } from "cookies-next";
+import { deleteCookie, getCookie } from "cookies-next";
 import { toast } from "react-toastify";
-
-let isRefreshing = false;
-
-interface FailedRequest {
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}
-
-let failedQueue: FailedRequest[] = [];
-
-const processQueue = (error: unknown, token: string | null) => {
-  failedQueue.forEach((prom) => {
-    if (token) {
-      prom.resolve(token);
-    } else {
-      prom.reject(error);
-    }
-  });
-  failedQueue = [];
-};
 
 // Only reached when the session can't be renewed. A hard navigation is
 // intentional (it resets all client state); NewsArticleForm guards unsaved
 // edits with a beforeunload prompt, and the user comes back to this page.
 const redirectToSignIn = () => {
+  clearAccessToken();
   deleteCookie(COOKIE_KEY);
   if (typeof window !== "undefined") {
     const back = window.location.pathname + window.location.search;
@@ -45,24 +29,26 @@ const redirectToSignIn = () => {
 
 // Admin dashboard API client. Public/server-rendered pages continue to use
 // the plain @/lib/api Fetch client — this one is specifically for
-// client-side admin dashboard requests that need the cookie-based auth
+// client-side admin dashboard requests that need the in-memory auth
 // token attached + automatic refresh-token handling.
 const adminApi: AxiosInstance = axios.create({
   baseURL: ENV.api_url,
 });
 
-adminApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const cookie = getCookie(COOKIE_KEY);
-  let user: TUserState | null = null;
+adminApi.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  let token = getAccessToken();
 
-  try {
-    user = cookie ? (JSON.parse(cookie as string) as TUserState) : null;
-  } catch (error) {
-    console.error("Error parsing user cookie", error);
+  if (
+    !token &&
+    typeof window !== "undefined" &&
+    getCookie(COOKIE_KEY) &&
+    !config.url?.includes("/api/auth/")
+  ) {
+    token = await refreshAccessToken();
   }
 
-  if (user?.token) {
-    config.headers.Authorization = `${user.token}`;
+  if (token) {
+    config.headers.Authorization = `${token}`;
   }
 
   return config;
@@ -85,49 +71,26 @@ adminApi.interceptors.response.use(
     };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({
-            resolve: (token: string) => {
-              originalRequest.headers.Authorization = token;
-              resolve(adminApi(originalRequest));
-            },
-            reject,
-          });
-        });
+      if (originalRequest.url?.includes("/api/auth/refresh-token")) {
+        redirectToSignIn();
+        return Promise.reject(error);
       }
 
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        const { data } = await refreshToken();
+        const token = await refreshAccessToken();
 
-        if (!data?.token) {
-          throw new Error("No new token returned");
+        if (!token) {
+          redirectToSignIn();
+          return Promise.reject(error);
         }
 
-        const cookie = getCookie(COOKIE_KEY);
-        const existingUser = cookie
-          ? (JSON.parse(cookie as string) as TUserState)
-          : {};
-
-        setCookie(
-          COOKIE_KEY,
-          JSON.stringify({ ...existingUser, ...data, isAuthenticated: true }),
-          getUserCookieOptions(),
-        );
-
-        adminApi.defaults.headers.common.Authorization = `${data.token}`;
-        processQueue(null, `${data.token}`);
-
+        originalRequest.headers.Authorization = `${token}`;
         return adminApi(originalRequest);
-      } catch (error: unknown) {
-        processQueue(error, null);
+      } catch (err: unknown) {
         redirectToSignIn();
-        return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
+        return Promise.reject(err);
       }
     }
 

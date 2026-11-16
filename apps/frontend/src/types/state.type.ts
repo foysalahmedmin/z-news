@@ -2,7 +2,12 @@ import type { TUser } from "./user.type";
 
 export type TUserState = {
   token?: string;
-  info?: TUser;
+  _id?: string;
+  name?: string;
+  role?: string;
+  image?: string;
+  email?: string;
+  info?: Partial<TUser>;
   isAuthenticated?: boolean;
 };
 

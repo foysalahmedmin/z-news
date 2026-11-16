@@ -95,8 +95,10 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  const isAuthenticated = Boolean(user?.info && user?.token);
-  const role = user?.info?.role;
+  const isAuthenticated = Boolean(
+    user?.isAuthenticated && (user?.info?._id || user?._id),
+  );
+  const role = user?.info?.role || user?.role;
 
   if (!isAuthenticated) {
     const signInUrl = new URL("/auth/sign-in", request.url);
