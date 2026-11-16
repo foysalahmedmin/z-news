@@ -20,6 +20,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "sanitize:content": "node dist/scripts/sanitize-existing-content.js",
+    "clear:expiry": "node dist/scripts/clear-default-expiry.js",
     "docker:dev": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev up -d --build",
     "docker:dev:stop": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev down",
     "docker:dev:logs": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev logs -f",
