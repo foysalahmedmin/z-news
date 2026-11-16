@@ -8,20 +8,20 @@
 | Repo | `z-news` pnpm monorepo (`apps/backend`, `apps/frontend`, `infra/`) |
 | File name | Kebab-case at the owner's request. `apps/backend/docs/rules.md` asks for snake_case `.md` names; the owner's request wins for this file. |
 
-**How to read this.** Part 1 takes 5 to 7 minutes and has the three key diagrams. Part 2 is the build spec. Statements about the current code name the file they come from; they were checked by reading the code on branch `fix/review-findings` at the time of writing, not by running it. Library facts were checked against the npm registry, the package sources and the official docs on 2026-11-16. Anything not confirmed is marked **verify**.
+**How to read this.** Part 1 takes 5 to 7 minutes and has the three key diagrams. Part 2 is the build spec. Statements about the current code name the file they come from; they were checked by reading the code on branch `fix/review-findings` at the time of writing, not by running it. Library and model facts (Google Gemini lineup, prices, API behaviour) were checked against the npm registry, the package sources and the official docs on 2026-11-16. Anything not confirmed is marked **verify**.
 
 ## What changed from v1
 
 | Area | Change |
 |---|---|
 | Orchestration | Each run is now a **LangGraph.js `StateGraph`** with typed state, conditional edges and per-story fan-out (`Send`). The hand-written stage dispatcher of v1 is gone. Checkpoints live in MongoDB (`@langchain/langgraph-checkpoint-mongodb`), so a crashed worker resumes where it stopped. |
-| Human in the loop | The optional queue review is a LangGraph `interrupt`, resumed from the admin panel through a MongoDB command. The same mechanism waits for Anthropic batches without blocking the worker. |
-| Model layer | LangChain.js chat models and embeddings, behind our own ports. Two library gotchas are handled explicitly: `withStructuredOutput` must use `method: "jsonSchema"` (the default sends a forced `tool_choice`, which Claude Opus 5.5 and Sonnet 5.5 reject with HTTP 400), and LangChain has no Message Batches support, so a small batch adapter on `@anthropic-ai/sdk` stays. |
+| Human in the loop | The optional queue review is a LangGraph `interrupt`, resumed from the admin panel through a MongoDB command. The same mechanism waits for provider batch jobs without blocking the worker. |
+| Model layer | **Google Gemini is the default** for every LLM task: Gemini 4 Carbon writes (Flex tier, 50% off), Gemini 3.5 Flash-Lite curates, through `@langchain/google`; batch jobs through Google's `@google/genai`. The layer is **provider-agnostic**: every task maps to an admin-edited model profile (provider, model, thinking level, delivery, prices, fallback chain), and Claude, OpenAI-compatible and self-hosted models are adapters behind the same port (§10). Structured output always uses the provider's native JSON schema (LangChain's default forced tool call is avoided). Model switches are measured with an evaluation harness. |
 | Coupling | Ports and adapters (hexagonal). Graph nodes are thin and call application services; services see only interfaces. The News integration sits behind a `DraftSink` port (in-process now, HTTP later if needed). Agents never import each other. |
 | Naming | The agents are **Collector**, **Curator** and **Drafter** everywhere (code, collections, events, UI). `ai_clusters` becomes `ai_stories`. One convention for collections, statuses, events, commands and paths (§1). Glossary in Appendix D. |
-| Control | Per-agent pause, run modes (`live`, `shadow`, `plan-only`), queue-review gate with timeout policy, per-source schedule and quotas, persona routing and daily quotas, versioned personas with preview and rollback, per-agent model, effort and budget caps, re-run a node or a single story, defined cancel and kill semantics, rate limits, retention settings, a permissions matrix and a full audit log (§11). |
+| Control | Per-agent pause, run modes (`live`, `shadow`, `plan-only`), queue-review gate with timeout policy, per-source schedule and quotas, persona routing and daily quotas, versioned personas with preview and rollback, per-task model profiles with fallbacks, per-agent budget caps, re-run a node or a single story, defined cancel and kill semantics, rate limits, retention settings, a permissions matrix and a full audit log (§11). |
 | Logic | Fixes for slot dates across midnight, overlapping and late runs, missed-slot coalescing, wire copy counted once, live blogs, long-running stories, what happens when an editor rejects a draft, fallbacks when Qdrant or the LLM is down, budget exhaustion mid-run, fair persona assignment, settings snapshots per run, longer retention for sources of published stories (§3.2, §8.6, §16). |
-| Diagrams | 19 Mermaid diagrams (v1 had 4). |
+| Diagrams | 20 Mermaid diagrams (v1 had 4). |
 | Removed | The "agent frameworks are left out" decision (the owner chose LangChain and LangGraph). The open question about frameworks. |
 
 ---
@@ -43,7 +43,7 @@ flowchart LR
     ADMIN["Admin<br/>settings, sources, personas"]
     EDITOR["Editor<br/>reviews and publishes"]
     OUTLETS["Whitelisted outlets<br/>RSS, sitemaps, pages"]
-    LLM["LLM provider<br/>Claude API or self-hosted"]
+    LLM["LLM providers<br/>Google Gemini by default,<br/>others by configuration"]
     READERS["Readers"]
     subgraph ZN["Z-News"]
         PANEL["Admin panel<br/>Next.js, existing"]
@@ -68,8 +68,10 @@ flowchart LR
 | Agent | Role in one line | Runs when | Output | LLM use |
 |---|---|---|---|---|
 | **Collector** | Fetches new articles from whitelisted outlets | At each admin-set time of day (Asia/Dhaka by default), any number per day | Raw articles in MongoDB, one vector each in Qdrant | None |
-| **Curator** | Groups articles into stories, skips what the newsroom already has, ranks, builds the slot's queue | Straight after the Collector, in the same run | Stories with status `queued`, each with a persona and a source pack | Small, cheap model (Claude Haiku 5.5) for borderline pairs and short briefs |
-| **Drafter** | Writes each queued story from all its sources, in the assigned persona's voice, checks it, saves it as a draft | When the queue is final: immediately, or after the optional queue review | A `news` draft (`origin: ai`) plus a permanent provenance record | Main model (Claude Opus 5.5 through the Batch API by default) |
+| **Curator** | Groups articles into stories, skips what the newsroom already has, ranks, builds the slot's queue | Straight after the Collector, in the same run | Stories with status `queued`, each with a persona and a source pack | Small, cheap model (Gemini 3.5 Flash-Lite by default) for borderline pairs and short briefs |
+| **Drafter** | Writes each queued story from all its sources, in the assigned persona's voice, checks it, saves it as a draft | When the queue is final: immediately, or after the optional queue review | A `news` draft (`origin: ai`) plus a permanent provenance record | Main model (Gemini 4 Carbon at the 50% Flex discount by default) |
+
+Which model does which task is a setting: each task has a model profile with a fallback chain, Google first, and any other provider can be added (§10).
 
 **Why these names.** v1 called them Collector, Editor-in-chief and Author. "Editor" and "author" are already user roles in this codebase (`editor`, `author`), and `writer` is already a News field (the public byline). Curator says what Agent 2 does (select and organise) without colliding with any existing name. Drafter says what Agent 3 produces, a draft, and that it never publishes.
 
@@ -110,7 +112,7 @@ flowchart TB
         X1["MongoDB stores"]
         X2["Qdrant"]
         X3["bge-m3 embeddings"]
-        X4["Claude, Ollama or vLLM<br/>through LangChain"]
+        X4["Gemini by default; Claude,<br/>OpenAI-compatible, Ollama<br/>through LangChain, per model profile"]
         X5["News module<br/>DraftSink"]
         X6["HTTP fetcher"]
     end
@@ -122,7 +124,7 @@ flowchart TB
     ADP -.->|"implement"| PORTS
 ```
 
-The pipeline's logic only knows interfaces ("store this article", "find similar vectors", "write this story", "save this draft"). Swapping Claude for a free self-hosted model, Qdrant for another vector store, or calling the News module over HTTP instead of in-process means writing one adapter, not touching the pipeline. The three agents never call each other; they hand over work through saved state (MongoDB documents and the graph state).
+The pipeline's logic only knows interfaces ("store this article", "find similar vectors", "write this story", "save this draft"). Moving a task from one Gemini model to another, to another provider's model or to a free self-hosted model is a settings change (a model profile); a new provider is one adapter. Swapping Qdrant for another vector store, or calling the News module over HTTP instead of in-process means writing one adapter, not touching the pipeline. The three agents never call each other; they hand over work through saved state (MongoDB documents and the graph state).
 
 ## 5. Where data lives
 
@@ -135,7 +137,8 @@ The pipeline's logic only knows interfaces ("store this article", "find similar 
 | Run state for resume (LangGraph checkpoints) | MongoDB `ai_graph_checkpoints` | 30 days |
 | Drafts | Existing `news` collection (`status: draft`, `origin: ai`) | Normal news lifecycle |
 | Provenance, costs, audit log | MongoDB `ai_generations`, `ai_usage`, `ai_audit_logs` | Permanently |
-| Secrets (LLM key, Qdrant key) | Worker environment variables only | n/a |
+| Model profiles, task routes and prices | MongoDB `ai_settings.models` | Permanently (versioned with the settings) |
+| Secrets (Google service account or API key, other provider keys, Qdrant key) | Worker environment variables only | n/a |
 
 ## 6. What the admin controls
 
@@ -144,7 +147,7 @@ The pipeline's logic only knows interfaces ("store this article", "find similar 
 - **Sources:** whitelist by URL or site name, with test fetch, health, per-source schedule override, priority and quotas. Terms of use must be reviewed before a source can be enabled.
 - **Queue review gate:** on or off, how long to wait, and what happens on timeout (approve or cancel). Reviewers can drop, merge, split, pin, change persona or title.
 - **Personas:** tone and style prompts written in the admin panel, a default, category routing, daily quotas, versions with preview, publish and rollback.
-- **Models and money:** model and effort per agent, monthly budget with per-agent and per-run caps, alerts at 80%.
+- **Models and money:** a model profile per task (provider, model, thinking level, Flex, Batch or Standard delivery, prices, fallback chain), a per-persona override, evaluation runs that compare models blind before a switch; monthly budget with per-agent and per-run caps, alerts at 80%.
 - **Recovery:** re-run one step of a run, re-draft one story, retry a failed draft, promote a shadow draft.
 - **History:** every run with timeline, logs and cost; an audit log of every admin action.
 
@@ -158,14 +161,18 @@ The pipeline's logic only knows interfaces ("store this article", "find similar 
 | Decision | Rationale |
 |---|---|
 | **LangGraph.js** (`@langchain/langgraph`) orchestrates each run: typed state, conditional edges, `Send` fan-out, MongoDB checkpointer, `interrupt` for review | Owner decision. It gives durable resume after crashes, human-in-the-loop pauses and per-story parallelism without hand-written stage code. TypeScript keeps one stack (Appendix A explains why not a Python service). |
-| **LangChain.js** for the model layer only (chat models, embeddings), behind our ports | Swap Claude for Ollama or vLLM by configuration. LangChain types do not leak into domain logic, which limits the impact of library upgrades. |
+| **LangChain.js** for the model layer only (chat models, embeddings), behind our ports | One interface for Gemini, Claude, OpenAI-compatible and Ollama models. LangChain types do not leak into domain logic, which limits the impact of library upgrades. |
+| **Google first:** Drafter `gemini-4-carbon` at the Flex discount (Batch as an alternative), Curator `gemini-3.5-flash-lite` | Owner decision. Carbon is Google's strongest model, and Bangla writing quality is the biggest risk; about **$4.6 a day for 60 drafts** from 1 Dec 2026 prices. Argon and Hydrogen are tested against it in Phase 0. |
+| **Model registry:** every task maps to an admin-edited profile (provider, model, thinking, delivery, prices with effective dates, fallback chain); adapters declare capabilities | Switching or adding a model is a settings change, measured by an evaluation harness; a new provider is one adapter. Prices are never hard-coded. |
+| **Vertex AI in production**, on the existing GCP project; Gemini Developer API paid key in development; never the free tier | Cloud data terms, IAM instead of an API key, no AI Studio spend caps. The free tier lets Google use and human-review prompts, which must not happen to scraped text and unpublished drafts. |
+| Own small model factory, not LangChain's `initChatModel` | Provider fields differ anyway (thinking, safety, tiers); an explicit allow-list is type-checked and avoids extra dependencies (§10.3). |
 | No autonomous agents: fixed nodes, fixed-schema calls, no tools | Prompt-injection safety, predictable cost, testable. |
 | Ports and adapters, thin graph nodes, agents talk only through persisted state | Loose coupling. Each piece can be replaced or tested alone. |
 | A separate `ai-worker` process from the same backend codebase (new entry `src/worker.ts`) | The Vercel serverless entry cannot run long jobs. Keeps the LLM key and scraping out of the API. |
 | Scheduling by a short polling loop with a unique slot key in MongoDB; admin actions reach the worker as MongoDB command documents | No new infrastructure. Works whether the API runs on Vercel or Docker. |
 | Qdrant plus bge-m3 embeddings, both self-hosted and free | Open source, small, multilingual including Bangla. MongoDB stays the source of truth; Qdrant can be rebuilt from it. |
-| Default Drafter model Claude Opus 5.5 through Message Batches (50% off); Curator uses Claude Haiku 5.5 | Best Bangla writing quality at about **$4 a day for 60 drafts**. Curation costs cents. |
-| Native structured outputs (`output_config.format`), never forced `tool_choice` | Opus 5.5 and Sonnet 5.5 return HTTP 400 on forced tool use. |
+| Native JSON-schema structured output on every provider that has it (`responseJsonSchema` on Gemini, `output_config.format` on Claude), never LangChain's default forced tool call; JSON mode plus Zod and one repair call elsewhere | Portable and strict. Claude Opus 5.5 and Sonnet 5.5 return HTTP 400 on forced tool use. |
+| Explicit safety settings and a fallback chain for blocked responses | News about violence and politics can trip filters; a blocked story falls back, then goes to a human writer (§10.4). |
 | The model returns text blocks; the server renders escaped HTML | Model-written HTML is never stored. |
 | Drafts go through the existing News, ArticleVersion, Workflow and Notification services, in-process, behind `DraftSink` | Editors use the screens they already know. The AI original is version 1, which gives an edit-distance quality metric. |
 | First install starts in `shadow` mode | Nothing appears in the news list until an admin switches to `live`. |
@@ -174,23 +181,24 @@ The pipeline's logic only knows interfaces ("store this article", "find similar 
 
 | Configuration | Per month |
 |---|---|
-| **Recommended:** Opus 5.5 batch Drafter + Haiku 5.5 Curator, 60 drafts a day | **≈ $123** |
-| Sonnet 5.5 batch Drafter instead | ≈ $63 |
+| **Recommended:** Gemini 4 Carbon Drafter at the Flex discount + Gemini 3.5 Flash-Lite Curator, 60 drafts a day | **≈ $138** |
+| Gemini 4 Hydrogen Drafter instead (if it passes the blind test) | ≈ $60 |
+| Claude Opus 5.5 batch + Haiku 5.5 (alternative provider) | ≈ $123 |
 | Free self-hosted model | $0 in API fees, but needs a GPU and gives weaker Bangla (§10.8) |
 
-Embeddings, Qdrant, LangChain and LangGraph cost nothing. Suggested starting budget cap: $200 a month with an alert at 80%. Details in §10.9.
+Prices are those from 1 December 2026, when Google doubles Gemini 4 Carbon and Argon to $4 / $20 per 1M tokens (Flex and Batch $2 / $10). Previews and persona reviews add about $4 a month. Token counts are estimates; Bangla tokenizes differently on each model, so Phase 0 measures them. Embeddings, Qdrant, LangChain and LangGraph cost nothing. Suggested starting budget cap: $200 a month with an alert at 80%, kept below Google's billing-tier cap ($250 a month at Tier 1 on the Developer API). Details in §10.9.
 
 ## 10. Rollout
 
 | Phase | Contents | Effort (one full-stack developer) |
 |---|---|---|
-| 0. Spike | Infrastructure checks, Node 22, real sources, threshold tuning, Bangla writing blind test, LangChain/LangGraph proofs (structured output, MongoDB checkpoints, interrupt, batch adapter) | 1.5 weeks |
+| 0. Spike | Infrastructure checks, Node 22, real sources, threshold tuning, Google platform setup (Vertex AI and a paid Developer API key), evaluation harness with the Bangla blind test across Gemini 4 Carbon, Argon and Hydrogen plus a non-Google control, token counts per model, LangChain/LangGraph proofs (Gemini structured output, Flex and Batch, MongoDB checkpoints, interrupt) | 2 weeks |
 | 1. Collector | Worker, scheduler, commands, run graph skeleton with checkpoints, sources, raw storage, admin screens for sources, schedule, runs and audit log | 2 to 3 weeks |
 | 2. Curator | Embeddings, Qdrant, stories, covered check, ranking, queue screen, queue-review gate | 2 to 3 weeks |
-| 3. Drafter | Model layer, batch adapter, personas with versions, checks, drafts, provenance panel, budget guard. Pilot in shadow mode, then live with 1 slot and 5 stories a day | 2 to 3 weeks |
+| 3. Drafter | Model registry and router, Google adapters (Vertex AI and Developer API), Gemini batch adapter, Models screen, personas with versions, checks, drafts, provenance panel, budget guard. Pilot in shadow mode, then live with 1 slot and 5 stories a day | 2.5 to 3.5 weeks |
 | 4. Controls and scale-up | Re-run tools, metrics, alerts, feedback loop into personas, docs, full schedule | 1.5 to 2 weeks |
 
-Total: about **9 to 13 weeks**, plus 1 to 2 days of editor time for labelling and blind ratings.
+Total: about **10 to 14 weeks**, plus 1 to 2 days of editor time for labelling and blind ratings.
 
 ---
 
@@ -217,13 +225,14 @@ Re-checked on branch `fix/review-findings` at the time of writing. Two other cha
 | F13 | Roles: `super-admin, admin, editor, author, contributor, subscriber, user`. `auth(...roles)` is a strict allow-list. At the time of writing 45 of 262 `auth(...)` calls in route files include `super-admin`; the `/api/news` routes list `admin` without it, although `news.policy.ts` already lists `super-admin` (fix in progress separately). | `enums/user-role.enum.ts`, `news.route.ts`, `news.policy.ts` | New AI routes use policy arrays that include `super-admin`. |
 | F14 | The frontend sets `timezone: "Asia/Dhaka"`; the backend has none (containers run in UTC). | `apps/frontend/src/config/settings/index.ts` | The schedule stores an explicit timezone. |
 | F15 | `<html lang="bn">`, Bangla UI strings, a bn/en toggle; News has no language field. | `app/layout.tsx` | Publishing language is very likely Bangla, with English sources (Q1). |
-| F16 | The Dockerfile installs **Node 18** (end of life). | `infra/docker/Dockerfile` | Now a hard blocker: `@langchain/core` and `@langchain/anthropic` require Node ≥ 20, `@qdrant/js-client-rest` 1.20 requires Node ≥ 22. Move to Node 22 LTS in Phase 0. |
+| F16 | The Dockerfile installs **Node 18** (end of life). | `infra/docker/Dockerfile` | Now a hard blocker: `@langchain/core` and `@langchain/google` require Node ≥ 20; `@google/genai` 3.x and `@qdrant/js-client-rest` 1.20 require Node ≥ 22. Move to Node 22 LTS in Phase 0. |
 | F17 | MongoDB is not in compose; `.env.example` points to a local standalone server. | `.env.example` | Production is probably Atlas or a replica set. **Verify** in Phase 0. |
 | F18 | Prometheus scrapes `/metrics`, which the app does not expose. | `infra/monitoring/prometheus.yml` | Observability goes through run documents and the admin UI (§15). |
 | F19 | Conventions: kebab-case directories, `[module].[role].ts` files, snake_case fields and payloads and query params, `T`-prefixed types, `*ValidationSchema`, `catchAsync`, `sendResponse`, `AppError`, soft delete, per-module `*.policy.ts` role arrays and `*_CACHE_PREFIX` constants (snake_case values such as `'article_version'`), `.spec.ts` in `__tests__/`, API docs in `docs/apis/`. Mongoose models use default collection names (`News` → `news`, `ArticleVersion` → `articleversions`). | `apps/backend/docs/rules.md`, `docs/structure.md`, modules | Followed throughout. New AI models set explicit snake_case `collection` names (§1.2). |
-| F20 | `apps/backend/package.json` says `"type": "module"` while `tsconfig.json` compiles to `module: commonjs`. | `package.json`, `tsconfig.json` | Every chosen LangChain, LangGraph, Anthropic and transformers.js package publishes both `import` and `require` entry points. **Verify** the worker entry builds and starts the same way as `src/index.ts`. |
+| F20 | `apps/backend/package.json` says `"type": "module"` while `tsconfig.json` compiles to `module: commonjs`. | `package.json`, `tsconfig.json` | Every chosen LangChain, LangGraph, `@google/genai` and transformers.js package publishes both `import` and `require` entry points. **Verify** the worker entry builds and starts the same way as `src/index.ts`. |
 | F21 | `AppQueryFind.filter()` passes unknown query keys through as filters at the time of writing (whitelisting fix in progress separately). | `builder/app-query-find.ts` | When whitelists land, add `origin` to the admin news list's whitelist. |
 | F22 | Mongoose 8.24.4 depends on `mongodb ~6.20`; the backend also depends directly on `mongodb ^6.21`. The LangGraph MongoDB checkpointer depends on `mongodb ^6.21`. | `node_modules/mongoose/package.json`, `package.json` | Give the checkpointer its own small `MongoClient` from the direct dependency instead of Mongoose's client (§4.6). |
+| F23 | The backend already uses Google Cloud: `config.gcp {project_id, bucket_name, credentials_path}` from `GOOGLE_CLOUD_PROJECT_ID`, `GOOGLE_CLOUD_STORAGE_BUCKET` and `GOOGLE_APPLICATION_CREDENTIALS` (a service-account key file). `@google-cloud/storage` clients are built with it, and uploads are served as public `https://storage.googleapis.com/<bucket>/<file>` URLs. `google-auth-library ^10.5.0` is a direct dependency. | `config/env.ts`, `middlewares/storage.middleware.ts`, `modules/file/file.service.ts`, `package.json` | Vertex AI reuses the project and the auth pattern, with its own worker service account (`roles/aiplatform.user` only). Vertex batch files go to a separate **private** bucket, never the public media bucket (§10.6). |
 
 ## 1. Naming and conventions
 
@@ -282,7 +291,9 @@ flowchart TB
         OLL["ollama, optional<br/>free self-hosted LLM"]
     end
     MDB[("MongoDB, existing<br/>replica set or Atlas")]
-    ANT["api.anthropic.com"]
+    GEM["Google Gemini<br/>Vertex AI in production,<br/>Developer API in development"]
+    GCSB[("Cloud Storage, private bucket<br/>Vertex batch files only")]
+    OTH["Other LLM providers<br/>optional, per model profile"]
     WEB["Whitelisted outlets"]
     FE --> SAPI
     FE --> APP
@@ -294,14 +305,17 @@ flowchart TB
     WK --> QD
     WK --> VOL
     WK -.-> OLL
-    WK --> ANT
+    WK --> GEM
+    WK -.-> GCSB
+    WK -.-> OTH
     WK --> WEB
 ```
 
 - **API** (existing, Docker or Vercel). Gains the new `ai-*` REST modules (§14). For AI features it only reads and writes MongoDB. It never calls the LLM or Qdrant, so it needs no new secrets.
 - **`ai-worker`** (new). Same `apps/backend` package, entry `src/worker.ts`. One Node process, no HTTP server, no cluster mode. It runs the scheduler loop and the LangGraph graphs. Memory: about 1 to 1.5 GB for the embedding model, 3 GB container limit.
 - **`qdrant`** (new). Reachable only from the worker, API key, named volume, image tag pinned to the client's minor version (**verify** the exact tag in Phase 0).
-- **`ollama`** (optional). Only if the free self-hosted model is chosen (§10.8).
+- **`ollama`** (optional). Only if a self-hosted model profile is used (§10.8).
+- **Google Gemini** (external). Vertex AI in production through the worker's service account; a paid Developer API key in development (§10.1).
 
 `package.json` gets `"dev:worker"` and `"start:worker"` scripts. `docker-compose.prod.yml` gets an `ai-worker` service (same image, `command: node dist/worker.js`, `CLUSTER_ENABLED=false`, no ports, `restart: always`, healthcheck on a heartbeat file) and a `qdrant` service. The existing `initializeJobs()` in the API stays as it is.
 
