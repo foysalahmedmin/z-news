@@ -314,7 +314,7 @@ const updateReadingStreak = async (userId: string) => {
 const getTopUsersByReputation = async (limit: number = 10) => {
   const profiles = await UserProfileRepository.findMany(
     {},
-    [{ path: 'user', select: 'name email image' }],
+    [{ path: 'user', select: 'name image' }],
     { reputation_score: -1 },
     limit,
   );

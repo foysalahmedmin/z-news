@@ -10,7 +10,7 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import {
   generateCacheKey,
-  invalidateCacheByPattern,
+  invalidateNamespaces,
   withCache,
 } from '../../utils/cache.utils';
 import * as CategoryRepository from './category.repository';
@@ -33,7 +33,7 @@ export const insertCategoriesFromFile = async (
 
   const count = await CategoryRepository.insertManyFromRaw(categories);
 
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
 
   return { count };
 };
@@ -42,7 +42,7 @@ export const insertCategoriesFromFile = async (
 
 export const createCategory = async (data: TCategory): Promise<TCategory> => {
   const result = await CategoryRepository.create(data);
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
   return result;
 };
 
@@ -150,7 +150,7 @@ export const updateCategory = async (
   const result = await CategoryRepository.updateById(id, payload);
 
   if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateNamespaces(CACHE_PREFIX, 'news');
   }
 
   return result!;
@@ -167,7 +167,7 @@ export const updateCategories = async (
   const result = await CategoryRepository.updateManyByIds(foundIds, payload);
 
   if (result.modifiedCount > 0) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateNamespaces(CACHE_PREFIX, 'news');
   }
 
   return { count: result.modifiedCount, not_found_ids: notFoundIds };
@@ -182,7 +182,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
   }
 
   await category.softDelete();
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
 };
 
 export const deleteCategories = async (
@@ -193,7 +193,7 @@ export const deleteCategories = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await CategoryRepository.softDeleteManyByIds(foundIds);
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
 
   return { count: foundIds.length, not_found_ids: notFoundIds };
 };
@@ -232,7 +232,7 @@ export const restoreCategory = async (id: string): Promise<TCategory> => {
     );
   }
 
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
   return category;
 };
 

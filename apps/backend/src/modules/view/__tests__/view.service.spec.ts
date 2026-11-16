@@ -13,6 +13,7 @@ jest.mock('../view.repository');
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
   invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
+  invalidateCache: jest.fn().mockResolvedValue(undefined),
   generateCacheKey: jest.fn(
     (_prefix: string, parts: unknown[]) => `mock:${parts.join(':')}`,
   ),
@@ -160,10 +161,24 @@ describe('ViewService.getSelfNewsView', () => {
       mockJwtPayload(),
       {} as TGuest,
       'news-id',
+      true,
     );
 
     expect(ViewRepository.create).toHaveBeenCalled();
     expect(result.meta.views).toBe(100);
+  });
+
+  it('should never record a view on a read (GET)', async () => {
+    (ViewRepository.count as jest.Mock).mockResolvedValue(100);
+
+    await ViewService.getSelfNewsView(
+      mockJwtPayload(),
+      {} as TGuest,
+      'news-id',
+    );
+
+    expect(ViewRepository.findOneLean).not.toHaveBeenCalled();
+    expect(ViewRepository.create).not.toHaveBeenCalled();
   });
 
   it('should only return count if already viewed', async () => {

@@ -24,6 +24,7 @@ jest.mock('../news.repository', () => ({
   restoreManyByIds: jest.fn(),
   deleteById: jest.fn(),
   deleteMany: jest.fn(),
+  countEngagement: jest.fn().mockResolvedValue({}),
 }));
 jest.mock('../../../utils/cache.utils', () => ({
   generateCacheKey: jest.fn(),
@@ -104,13 +105,39 @@ describe('News Service', () => {
       );
       expect(result).toEqual(mockNews);
     });
+
+    it('should not let authors publish or feature', async () => {
+      (NewsRepository.create as jest.Mock).mockResolvedValue(mockNewsDoc);
+
+      await NewsService.createNews(
+        { ...mockUser, role: 'author' },
+        { ...mockNews, status: 'published', is_featured: true },
+      );
+
+      const saved = (NewsRepository.create as jest.Mock).mock.calls[0][0];
+      expect(saved.status).toBe('pending');
+      expect(saved).not.toHaveProperty('is_featured');
+    });
+  });
+
+  describe('restoreSelfNews', () => {
+    it('should restore only the caller own article', async () => {
+      (NewsRepository.restoreById as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        NewsService.restoreSelfNews({ ...mockUser, role: 'author' }, mockId),
+      ).rejects.toThrow(AppError);
+      expect(NewsRepository.restoreById).toHaveBeenCalledWith(mockId, {
+        author: mockUser._id,
+      });
+    });
   });
 
   describe('getNews', () => {
     it('should return a news article by id', async () => {
       (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(mockNews);
 
-      const result = await NewsService.getNews(mockId);
+      const result = await NewsService.getNews(mockUser, mockId);
 
       expect(NewsRepository.findOneLean).toHaveBeenCalledWith(
         { _id: mockId },
@@ -119,10 +146,21 @@ describe('News Service', () => {
       expect(result).toEqual(mockNews);
     });
 
+    it('should only return the caller own article for authors', async () => {
+      (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(mockNews);
+
+      await NewsService.getNews({ ...mockUser, role: 'author' }, mockId);
+
+      expect(NewsRepository.findOneLean).toHaveBeenCalledWith(
+        { _id: mockId, author: mockUser._id },
+        expect.any(Array),
+      );
+    });
+
     it('should throw error if news not found', async () => {
       (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(null);
 
-      await expect(NewsService.getNews(mockId)).rejects.toThrow(
+      await expect(NewsService.getNews(mockUser, mockId)).rejects.toThrow(
         new AppError(httpStatus.NOT_FOUND, 'News not found'),
       );
     });

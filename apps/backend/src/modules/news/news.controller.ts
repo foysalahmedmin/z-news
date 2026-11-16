@@ -78,7 +78,7 @@ export const getSelfNews = catchAsync(async (req, res) => {
 
 export const getNews = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.getNews(id);
+  const result = await NewsServices.getNews(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -110,7 +110,7 @@ export const getSelfBulkNews = catchAsync(async (req, res) => {
 });
 
 export const getBulkNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.getBulkNews(req.query);
+  const result = await NewsServices.getBulkNews(req.user, req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

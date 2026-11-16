@@ -35,7 +35,8 @@ const ContentEditor = () => {
         <RichTextEditor
           value={contentValue}
           onChange={(html) => {
-            setValue("content", html);
+            // shouldDirty: drives the unsaved-changes guard in the form.
+            setValue("content", html, { shouldDirty: true });
           }}
           error={errors.content?.message}
           uploadFileCategory="news-content"

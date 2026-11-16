@@ -89,7 +89,7 @@ export const findPaginated = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const reactionQuery = new AppQueryFind(Reaction, { ...filter, ...query })
+  const reactionQuery = new AppQueryFind(Reaction, query, filter)
     .filter()
     .sort()
     .paginate()

@@ -6,11 +6,11 @@ export type TPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TChannel = 'web' | 'push' | 'email';
 export type TType =
   | 'news-request'
-  | 'news-request-response'
+  | 'news-request-approval'
   | 'news-headline-request'
-  | 'news-headline-request-response'
+  | 'news-headline-request-approval'
   | 'news-break-request'
-  | 'news-break-request-response'
+  | 'news-break-request-approval'
   | 'reaction'
   | 'comment'
   | 'reply';

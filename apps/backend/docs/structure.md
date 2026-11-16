@@ -23,7 +23,7 @@ project-root/
 ├─ package.json
 ├─ tsconfig.json
 ├─ jest.config.ts
-├─ eslint.config.js
+├─ eslint.config.mjs
 ├─ .prettierrc.json
 └─ README.md
 ```

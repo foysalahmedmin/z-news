@@ -1,5 +1,6 @@
 import { getPublicProfile } from "@/services/user-profile.service";
 import type { TUserProfile } from "@/types/user-profile.type";
+import { userImageUrl } from "@/utils/userImageUrl";
 import {
   Award,
   BookOpen,
@@ -23,6 +24,10 @@ import { notFound } from "next/navigation";
 type Props = {
   params: Promise<{ userId: string }>;
 };
+
+// Empty list = no profiles at build time, each one is rendered on first
+// visit and then cached/revalidated (ISR) instead of rendered per request.
+export const generateStaticParams = async () => [];
 
 export const generateMetadata = async ({ params }: Props) => {
   const { userId } = await params;
@@ -91,9 +96,10 @@ const ProfilePage = async ({ params }: Props) => {
             <div className="border-background bg-muted relative h-24 w-24 overflow-hidden rounded-full border-4 shadow-lg">
               {user?.image ? (
                 <Image
-                  src={user.image}
+                  src={userImageUrl(user.image)}
                   alt={user.name}
                   fill
+                  sizes="96px"
                   className="object-cover"
                 />
               ) : (
@@ -122,7 +128,6 @@ const ProfilePage = async ({ params }: Props) => {
                     </span>
                   )}
                 </div>
-                <p className="text-muted-foreground text-sm">{user?.email}</p>
 
                 {profile.location && (
                   <div className="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
@@ -296,9 +301,10 @@ const ProfilePage = async ({ params }: Props) => {
                 <div className="bg-muted relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
                   {author.image ? (
                     <Image
-                      src={author.image}
+                      src={userImageUrl(author.image)}
                       alt={author.name}
                       fill
+                      sizes="40px"
                       className="object-cover"
                     />
                   ) : (
@@ -309,9 +315,6 @@ const ProfilePage = async ({ params }: Props) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{author.name}</p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {author.email}
-                  </p>
                 </div>
                 <ExternalLink className="text-muted-foreground h-4 w-4 flex-shrink-0" />
               </div>

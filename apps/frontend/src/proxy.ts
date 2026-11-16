@@ -44,14 +44,24 @@ function buildRoutePatterns(
 
 const ROUTE_PATTERNS = buildRoutePatterns(items);
 
+// Roles allowed into the /admin area at all (backend UserRole minus
+// subscriber/user). Anything else is turned away before per-route checks.
+const STAFF_ROLES = ["super-admin", "admin", "editor", "author", "contributor"];
+
+// Prefix match, so paths missing from the menu (e.g. content-templates/add)
+// inherit the roles of their nearest menu ancestor instead of having none.
 function matchesPattern(pathSegments: string[], pattern: string[]): boolean {
-  if (pathSegments.length !== pattern.length) return false;
+  if (pathSegments.length < pattern.length) return false;
   return pattern.every(
     (seg, i) => seg.startsWith(":") || seg === pathSegments[i],
   );
 }
 
-// Longest (most specific) match wins, e.g. files/edit/:id over files.
+const paramCount = (p: TRoutePattern) =>
+  p.segments.filter((seg) => seg.startsWith(":")).length;
+
+// Most specific match wins: longest first (files/edit/:id over files), then
+// fewer params (news-articles/add over news-articles/:id).
 function getRequiredRoles(pathname: string): readonly string[] | undefined {
   const segments = pathname
     .replace(/^\/admin\/?/, "")
@@ -62,7 +72,10 @@ function getRequiredRoles(pathname: string): readonly string[] | undefined {
   for (const pattern of ROUTE_PATTERNS) {
     if (
       matchesPattern(segments, pattern.segments) &&
-      (!best || pattern.segments.length > best.segments.length)
+      (!best ||
+        pattern.segments.length > best.segments.length ||
+        (pattern.segments.length === best.segments.length &&
+          paramCount(pattern) < paramCount(best)))
     ) {
       best = pattern;
     }
@@ -95,6 +108,10 @@ export function proxy(request: NextRequest) {
   // needs the auth check above, not the /admin-specific role gating below.
   if (request.nextUrl.pathname.startsWith("/user")) {
     return NextResponse.next();
+  }
+
+  if (!role || !STAFF_ROLES.includes(role)) {
+    return NextResponse.redirect(new URL("/user", request.url));
   }
 
   const requiredRoles = getRequiredRoles(request.nextUrl.pathname);

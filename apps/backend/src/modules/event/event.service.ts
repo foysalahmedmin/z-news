@@ -8,7 +8,7 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import {
   generateCacheKey,
-  invalidateCacheByPattern,
+  invalidateNamespaces,
   withCache,
 } from '../../utils/cache.utils';
 import * as EventRepository from './event.repository';
@@ -21,7 +21,7 @@ const CACHE_TTL = 3600; // 1 hour
 
 export const createEvent = async (data: TEvent): Promise<TEvent> => {
   const result = await EventRepository.create(data);
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
   return result;
 };
 
@@ -95,7 +95,7 @@ export const updateEvent = async (
   const result = await EventRepository.updateById(id, payload);
 
   if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateNamespaces(CACHE_PREFIX, 'news');
   }
 
   return result!;
@@ -115,7 +115,7 @@ export const updateEvents = async (
   const result = await EventRepository.updateManyByIds(foundIds, payload);
 
   if (result.modifiedCount > 0) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateNamespaces(CACHE_PREFIX, 'news');
   }
 
   return {
@@ -133,7 +133,7 @@ export const deleteEvent = async (id: string): Promise<void> => {
   }
 
   await event.softDelete();
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
 };
 
 export const deleteEvents = async (
@@ -147,7 +147,7 @@ export const deleteEvents = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await EventRepository.softDeleteManyByIds(foundIds);
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
 
   return {
     count: foundIds.length,
@@ -192,7 +192,7 @@ export const restoreEvent = async (id: string): Promise<TEvent> => {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found or not deleted');
   }
 
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateNamespaces(CACHE_PREFIX, 'news');
   return event;
 };
 

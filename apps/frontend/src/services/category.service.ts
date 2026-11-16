@@ -1,38 +1,31 @@
 import { ENV } from "@/config";
 import { TCategoriesResponse, TCategoryResponse } from "@/types/category.type";
 
+// 5 min + on-demand expiry via the "categories" tag (app/api/revalidate).
+const CATEGORY_CACHE = { revalidate: 300, tags: ["categories"] };
+
+// 404 -> { data: null } (page calls notFound()); other failures throw so ISR
+// keeps the last good page.
 export async function fetchCategory(
   slug: string,
   query?: Record<string, any>,
 ): Promise<TCategoryResponse> {
-  try {
-    const queryString = query
-      ? `?${new URLSearchParams(query as Record<string, string>).toString()}`
-      : "";
+  const queryString = query
+    ? `?${new URLSearchParams(query as Record<string, string>).toString()}`
+    : "";
 
-    const url = `${ENV.api_url}/api/category/${slug}/public${queryString}`;
+  const url = `${ENV.api_url}/api/category/${encodeURIComponent(slug)}/public${queryString}`;
 
-    const response = await fetch(url, {
-      method: "GET",
-      next: { revalidate: 60 * 0.5 },
-    });
+  const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
 
-    if (!response.ok) {
-      return {
-        data: null,
-        message: "Failed to fetch category",
-        success: false,
-      } as any;
-    }
-
-    return response.json() as Promise<TCategoryResponse>;
-  } catch (error) {
-    return {
-      data: null,
-      message: "Failed to fetch category",
-      success: false,
-    } as any;
+  if (response.status === 404) {
+    return { data: null, message: "Category not found", success: false } as any;
   }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch category "${slug}": ${response.status}`);
+  }
+
+  return response.json() as Promise<TCategoryResponse>;
 }
 
 export async function fetchCategories(
@@ -45,10 +38,7 @@ export async function fetchCategories(
 
     const url = `${ENV.api_url}/api/category/public${queryString}`;
 
-    const response = await fetch(url, {
-      method: "GET",
-      next: { revalidate: 60 * 0.5 },
-    });
+    const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
 
     if (!response.ok) {
       return {
@@ -74,10 +64,7 @@ export async function fetchCategoriesTree(
 
     const url = `${ENV.api_url}/api/category/tree/public${queryString}`;
 
-    const response = await fetch(url, {
-      method: "GET",
-      next: { revalidate: 60 * 0.5 },
-    });
+    const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
 
     if (!response.ok) {
       return {

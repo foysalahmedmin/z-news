@@ -1,6 +1,6 @@
 import { fetchBulkNewsHeadlines } from "@/services/news-headline.service";
 import Link from "next/link";
-import Marquee from "react-fast-marquee";
+import Marquee from "@/components/ui/Marquee";
 
 const NewsHeadlinesSection = async () => {
   const { data } = await fetchBulkNewsHeadlines({
@@ -16,7 +16,7 @@ const NewsHeadlinesSection = async () => {
             <div className="relative flex flex-col items-center lg:flex-row">
               <div className="bg-primary text-primary-foreground flex h-12 w-full items-center justify-center gap-2 px-4 lg:w-auto">
                 <span className="relative flex size-4">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
+                  <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-red-500 opacity-75"></span>
                   <span className="relative inline-flex size-4 rounded-full bg-red-500"></span>
                 </span>
                 <h3 className="font-bold whitespace-nowrap">শিরোনাম</h3>
@@ -26,7 +26,7 @@ const NewsHeadlinesSection = async () => {
               <div className="relative flex h-12 w-full items-center overflow-hidden lg:w-auto lg:flex-1">
                 <div className="via-card from-card absolute -end-1 top-0 bottom-0 z-20 w-10 bg-gradient-to-l to-transparent" />
                 <div className="via-card from-card absolute -start-1 top-0 bottom-0 z-20 w-10 bg-gradient-to-r to-transparent" />
-                <Marquee speed={50} pauseOnHover gradient={false}>
+                <Marquee duration={Math.max(data.length * 6, 20)}>
                   <ul className="flex whitespace-nowrap">
                     {data?.map((headline) => (
                       <li

@@ -56,7 +56,6 @@ jest.mock('../middlewares/auth.middleware', () =>
 );
 
 import { WorkflowService } from '../modules/workflow/workflow.service';
-import * as NewsService from '../modules/news/news.service';
 import app from '../app';
 
 const agent = supertest(app);
@@ -110,7 +109,11 @@ describe('Editorial Workflow Integration', () => {
       const res = await agent
         .patch(`/api/workflow/${workflowId}/stage`)
         .set('Authorization', 'Bearer token')
-        .send({ stage_name: 'editorial-review', status: 'approved', comments: 'Looks good' });
+        .send({
+          stage_name: 'editorial-review',
+          status: 'approved',
+          comments: 'Looks good',
+        });
 
       expect(res.status).toBe(httpStatus.OK);
       expect(res.body.success).toBe(true);

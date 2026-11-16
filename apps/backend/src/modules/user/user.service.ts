@@ -22,6 +22,14 @@ import { TUser } from './user.type';
 const CACHE_PREFIX = 'user';
 const CACHE_TTL = 3600; // 1 hour
 
+// Ends existing sessions (token_version bump) and drops the cached auth state, so blocked,
+// deleted or re-roled users lose access now instead of when the 30 min auth cache expires.
+const revokeSessions = async (ids: string[]) => {
+  if (!ids.length) return;
+  await UserRepository.incrementTokenVersionMany(ids);
+  await invalidateCache(ids.map((id) => `auth:user:${id}`));
+};
+
 // ─── Get Single ───────────────────────────────────────────────────────────────
 
 export const getSelf = async (user: TJwtPayload): Promise<TUser> => {
@@ -129,12 +137,12 @@ export const updateUser = async (
     (payload.role !== undefined && payload.role !== data.role) ||
     (payload.status !== undefined && payload.status !== data.status);
 
-  if (roleOrStatusChanged) {
-    await UserRepository.incrementTokenVersion(id);
-    await invalidateCache(`auth:user:${id}`);
-  }
-
   const result = await UserRepository.updateById(id, payload);
+
+  // After the write, so a concurrent request can't re-cache the old role/status.
+  if (result && roleOrStatusChanged) {
+    await revokeSessions([id]);
+  }
 
   if (result) {
     await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', id]));
@@ -158,6 +166,10 @@ export const updateUsers = async (
 
   const result = await UserRepository.updateManyByIds(foundIds, payload);
 
+  if (payload.role !== undefined || payload.status !== undefined) {
+    await revokeSessions(foundIds);
+  }
+
   if (result.modifiedCount > 0) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
@@ -174,6 +186,7 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 
   await user.softDelete();
+  await revokeSessions([id]);
   await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', id]));
   await invalidateCacheByPattern(`${CACHE_PREFIX}:admin:list:*`);
 };
@@ -189,6 +202,7 @@ export const deleteUsers = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await UserRepository.softDeleteManyByIds(foundIds);
+  await revokeSessions(foundIds);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
   return { count: foundIds.length, not_found_ids: notFoundIds };
@@ -203,6 +217,8 @@ export const deleteUserPermanent = async (id: string): Promise<void> => {
   }
 
   await UserRepository.hardDeleteById(id);
+  await invalidateCache(`auth:user:${id}`);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteUsersPermanent = async (
@@ -216,6 +232,8 @@ export const deleteUsersPermanent = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await UserRepository.hardDeleteManyByIds(foundIds);
+  await invalidateCache(foundIds.map((id) => `auth:user:${id}`));
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
   return { count: foundIds.length, not_found_ids: notFoundIds };
 };

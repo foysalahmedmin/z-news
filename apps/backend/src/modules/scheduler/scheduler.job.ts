@@ -1,7 +1,12 @@
 /* eslint-disable no-console */
 import { News } from '../news/news.model';
 
-const runScheduledJobs = async () => {
+// One scheduler tick. Both updates are idempotent, so an occasional overlapping run
+// (e.g. cron endpoint + in-process timer) is harmless.
+export const runScheduledJobs = async (): Promise<{
+  published: number;
+  archived: number;
+}> => {
   const now = new Date();
 
   console.log(`[Scheduler] Checking for jobs at ${now.toISOString()}...`);
@@ -24,7 +29,7 @@ const runScheduledJobs = async () => {
       );
     }
 
-    // 2. Archive published news that reached their expiry time
+    // 2. Archive published news whose editor-set expiry has passed
     const newsToArchive = await News.updateMany(
       {
         status: 'published',
@@ -40,16 +45,21 @@ const runScheduledJobs = async () => {
         `[Scheduler] Archived ${newsToArchive.modifiedCount} expired articles.`,
       );
     }
+
+    return {
+      published: newsToPublish.modifiedCount,
+      archived: newsToArchive.modifiedCount,
+    };
   } catch (error) {
     console.error('[Scheduler] Error running background jobs:', error);
+    return { published: 0, archived: 0 };
   }
 };
 
-// Start the scheduler (running every minute)
-// Only runs on cluster worker 0 (or non-cluster mode) to prevent race conditions
+// Start the scheduler (running every minute). In cluster mode the primary sets
+// RUN_SCHEDULER=true on exactly one worker and false on the others (see src/index.ts).
 export const initScheduler = () => {
-  const instanceId = process.env.NODE_APP_INSTANCE;
-  if (instanceId !== undefined && instanceId !== '0') {
+  if (process.env.RUN_SCHEDULER === 'false') {
     return;
   }
 

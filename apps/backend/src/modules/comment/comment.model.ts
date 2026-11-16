@@ -34,14 +34,14 @@ const commentSchema = new Schema<TCommentDocument>(
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: function () {
+      required: function (this: { guest?: unknown }): boolean {
         return !this.guest;
       },
     },
 
     guest: {
       type: String,
-      required: function () {
+      required: function (this: { user?: unknown }): boolean {
         return !this.user;
       },
       default: null,

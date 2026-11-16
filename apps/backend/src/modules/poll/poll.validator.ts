@@ -67,7 +67,6 @@ const voteSchema = z.object({
     option_indices: z
       .array(z.number().min(0))
       .min(1, 'At least one option must be selected'),
-    guest_id: z.string().optional(), // For anonymous voting
   }),
 });
 

@@ -1,7 +1,6 @@
 import { ENV } from "@/config";
-import type { TUserState } from "@/types/state.type";
+import { getAuthHeaders } from "@/lib/api";
 import type { TUserProfile } from "@/types/user-profile.type";
-import { getCookie } from "cookies-next";
 
 type TProfileResponse = {
   data: TUserProfile;
@@ -11,28 +10,18 @@ type TProfileResponse = {
 
 const BASE = `${ENV.api_url}/api/user-profiles`;
 
-// The backend's auth() middleware reads the access token from the
-// Authorization header only (never from a cookie), so every auth()-protected
-// route below must attach it manually — the same "user" cookie
-// useUser.tsx writes on sign-in, read here via cookies-next's isomorphic
-// getCookie the same way src/lib/api.ts's request interceptor does.
-const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const cookie = await getCookie("user");
-  try {
-    const user = cookie ? (JSON.parse(cookie) as TUserState) : null;
-    return user?.token ? { Authorization: user.token } : {};
-  } catch {
-    return {};
-  }
-};
-
 // ──────────────────────────────────────────────── GET MY PROFILE
 export const getMyProfile = async (): Promise<TProfileResponse> => {
+  const headers = getAuthHeaders();
+  // Anonymous visitors have no profile; skip a request that can only 401.
+  if (!headers.Authorization) {
+    return { success: false, message: "Not signed in" } as TProfileResponse;
+  }
   const response = await fetch(`${BASE}/me`, {
     method: "GET",
     credentials: "include",
     cache: "no-cache",
-    headers: await getAuthHeaders(),
+    headers,
   });
   return response.json();
 };
@@ -54,7 +43,7 @@ export const updateMyProfile = async (payload: {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
@@ -77,7 +66,7 @@ export const updateNotificationPreferences = async (payload: {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
@@ -90,8 +79,7 @@ export const getPublicProfile = async (
 ): Promise<TProfileResponse> => {
   const response = await fetch(`${BASE}/${userId}`, {
     method: "GET",
-    credentials: "include",
-    cache: "no-cache",
+    next: { revalidate: 60 },
   });
   return response.json();
 };
@@ -105,7 +93,7 @@ export const followAuthor = async (
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({ author_id: authorId }),
   });
@@ -119,7 +107,7 @@ export const unfollowAuthor = async (
   const response = await fetch(`${BASE}/follow/author/${authorId}`, {
     method: "DELETE",
     credentials: "include",
-    headers: await getAuthHeaders(),
+    headers: getAuthHeaders(),
   });
   return response.json();
 };
@@ -133,7 +121,7 @@ export const followCategory = async (
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({ category_id: categoryId }),
   });
@@ -147,7 +135,7 @@ export const unfollowCategory = async (
   const response = await fetch(`${BASE}/follow/category/${categoryId}`, {
     method: "DELETE",
     credentials: "include",
-    headers: await getAuthHeaders(),
+    headers: getAuthHeaders(),
   });
   return response.json();
 };
@@ -159,7 +147,7 @@ export const followTopic = async (topic: string): Promise<TProfileResponse> => {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(await getAuthHeaders()),
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({ topic }),
   });
@@ -175,7 +163,7 @@ export const unfollowTopic = async (
     {
       method: "DELETE",
       credentials: "include",
-      headers: await getAuthHeaders(),
+      headers: getAuthHeaders(),
     },
   );
   return response.json();
@@ -191,8 +179,7 @@ export const getTopUsers = async (
   const url = limit ? `${BASE}/top?limit=${limit}` : `${BASE}/top`;
   const response = await fetch(url, {
     method: "GET",
-    credentials: "include",
-    cache: "no-cache",
+    next: { revalidate: 60 },
   });
   return response.json();
 };

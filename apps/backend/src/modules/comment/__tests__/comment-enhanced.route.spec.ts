@@ -49,9 +49,11 @@ const request = supertest(app);
 
 describe('GET /api/comment-enhanced/news/:news_id/threaded', () => {
   it('should return threaded comments', async () => {
-    const mockData = [{ _id: '1', content: 'Top', replies: [] }];
+    const mockData = [
+      { _id: '1', content: 'Top', is_owner: false, replies: [] },
+    ];
     (EnhancedCommentService.getThreadedComments as jest.Mock).mockResolvedValue(
-      mockData,
+      { data: mockData, total: 1 },
     );
 
     const res = await request.get(
@@ -60,6 +62,7 @@ describe('GET /api/comment-enhanced/news/:news_id/threaded', () => {
 
     expect(res.status).toBe(httpStatus.OK);
     expect(res.body.data).toEqual(mockData);
+    expect(res.body.meta).toEqual({ total: 1 });
   });
 });
 

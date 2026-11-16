@@ -159,7 +159,7 @@ const NewsArticlesPage = () => {
 
   const { data: usersResponse } = useQuery({
     queryKey: ["users"],
-    queryFn: () => fetchWritersUsers(),
+    queryFn: () => fetchWritersUsers({ limit: 100 }),
   });
 
   // Event handlers

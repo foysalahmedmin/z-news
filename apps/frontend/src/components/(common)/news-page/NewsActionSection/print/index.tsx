@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { TNews } from "@/types/news.type";
 import { Printer } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import NewsDetailsPrintSection from "../../NewsDetailsPrintSection";
 
@@ -12,10 +12,20 @@ type PrintProps = {
   className?: string;
 };
 
+// The printable copy of the article is only mounted while printing, so the
+// page doesn't carry a hidden duplicate of the article (and its <h1>).
 const Print: React.FC<PrintProps> = ({ news, className }) => {
   const contentRef = useRef<HTMLDivElement>(null);
-  const reactToPrintFn = useReactToPrint({ contentRef });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const reactToPrintFn = useReactToPrint({
+    contentRef,
+    onAfterPrint: () => setIsPrinting(false),
+    onPrintError: () => setIsPrinting(false),
+  });
+
+  useEffect(() => {
+    if (isPrinting) reactToPrintFn();
+  }, [isPrinting, reactToPrintFn]);
 
   return (
     <div
@@ -25,18 +35,20 @@ const Print: React.FC<PrintProps> = ({ news, className }) => {
       )}
     >
       <button
-        onClick={reactToPrintFn}
-        disabled={isLoading}
+        onClick={() => setIsPrinting(true)}
+        disabled={isPrinting}
+        aria-label="প্রিন্ট করুন"
         className="flex h-full cursor-pointer items-center gap-1 px-2"
       >
         <Printer className={cn("size-5")} />
       </button>
-      {/* Hidden NewsContent for printing */}
-      <div className="hidden">
-        <div ref={contentRef}>
-          <NewsDetailsPrintSection news={news} />
+      {isPrinting && (
+        <div className="hidden">
+          <div ref={contentRef}>
+            <NewsDetailsPrintSection news={news} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

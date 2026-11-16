@@ -94,6 +94,12 @@ export const incrementTokenVersion = async (id: string): Promise<void> => {
   await User.findByIdAndUpdate(id, { $inc: { token_version: 1 } });
 };
 
+export const incrementTokenVersionMany = async (
+  ids: string[],
+): Promise<void> => {
+  await User.updateMany({ _id: { $in: ids } }, { $inc: { token_version: 1 } });
+};
+
 export const updateIsVerifiedById = async (
   id: string,
 ): Promise<TUserDocument | null> => {
@@ -130,15 +136,16 @@ export const findWritersPaginated = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const userQuery = new AppQueryFind(User, {
-    role: { $in: ['admin', 'author'] },
-    ...query,
+  // Public endpoint: only users who can author news, only public profile fields, and no
+  // client filters (search by name only; searching email would leak it).
+  const userQuery = new AppQueryFind(User, query, {
+    role: { $in: ['super-admin', 'admin', 'author'] },
   })
-    .search(['name', 'email'])
-    .filter()
-    .sort()
+    .search(['name'])
+    .filter([])
+    .sort(['name', 'created_at'])
     .paginate()
-    .fields()
+    .fields(['name', 'image'])
     .tap((q) => q.lean());
 
   return await userQuery.execute();

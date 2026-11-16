@@ -1,10 +1,11 @@
 import NewsCommentSection from "@/components/(common)/news-page/NewsCommentSection";
 import NewsDetailsSection from "@/components/(common)/news-page/NewsDetailsSection";
 import RelatedNewsSection from "@/components/(common)/news-page/RelatedNewsSection";
-import { URLS } from "@/config";
+import { PROJECT, SEO, URLS } from "@/config";
 import { fetchNews } from "@/services/news.service";
 import { parseYouTubeUrl } from "@/utils/youtubeUrlUtils";
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{
@@ -12,65 +13,66 @@ type Props = {
   }>;
 };
 
+// No articles at build time; each is rendered on first visit, then served
+// from the ISR cache (5 min + on-demand revalidation by tag).
+export const generateStaticParams = async () => [];
+
 // Generate metadata for SEO
 export const generateMetadata = async ({
   params,
 }: Props): Promise<Metadata> => {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
-  try {
-    const { data } = await fetchNews(decodedSlug);
+  const { data } = await fetchNews(decodedSlug);
 
-    if (!data) {
-      return { title: "News Not Found" };
-    }
-
-    const seoTitle = data?.meta_title || data?.title;
-    const seoDescription =
-      data?.meta_description ||
-      data?.description ||
-      data?.content.replace(/<[^>]*>/g, "").substring(0, 160);
-
-    const { thumbnails } = data?.youtube
-      ? parseYouTubeUrl(data?.youtube || "")
-      : {};
-
-    const thumbnail =
-      data?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
-
-    return {
-      title: seoTitle,
-      description: seoDescription,
-      keywords: data?.tags,
-      alternates: {
-        canonical: data?.canonical_url || `${URLS.app}/news/${data?.slug}`,
-      },
-      openGraph: {
-        title: seoTitle,
-        description: seoDescription,
-        images: thumbnail,
-        type: "article",
-        url: `${URLS.app}/news/${data?.slug}`,
-        publishedTime:
-          data?.published_at && new Date(data?.published_at).toISOString(),
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: seoTitle,
-        description: seoDescription,
-        images: [thumbnail],
-      },
-    };
-  } catch (error) {
+  if (!data) {
     return { title: "News Not Found" };
   }
+
+  const seoTitle = data?.meta_title || data?.title;
+  const seoDescription =
+    data?.meta_description ||
+    data?.description ||
+    data?.content.replace(/<[^>]*>/g, "").substring(0, 160);
+
+  const { thumbnails } = data?.youtube
+    ? parseYouTubeUrl(data?.youtube || "")
+    : {};
+
+  const thumbnail =
+    data?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
+
+  return {
+    title: seoTitle,
+    description: seoDescription,
+    keywords: data?.tags,
+    alternates: {
+      canonical: data?.canonical_url || `${URLS.app}/news/${data?.slug}`,
+    },
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      images: thumbnail,
+      type: "article",
+      url: `${URLS.app}/news/${data?.slug}`,
+      publishedTime:
+        data?.published_at && new Date(data?.published_at).toISOString(),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoTitle,
+      description: seoDescription,
+      images: [thumbnail],
+    },
+  };
 };
 
 const NewsPage = async ({ params }: Props) => {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
 
-  let { data } = await fetchNews(decodedSlug);
+  const { data } = await fetchNews(decodedSlug);
+  if (!data) notFound();
 
   const { thumbnails } = data?.youtube
     ? parseYouTubeUrl(data?.youtube || "")
@@ -90,14 +92,13 @@ const NewsPage = async ({ params }: Props) => {
     dateModified:
       (data?.edited_at && new Date(data?.edited_at).toISOString()) ||
       (data?.published_at && new Date(data?.published_at).toISOString()),
-    author: {
-      "@type": "Person",
-      name: data?.author.name,
-      email: data?.author.email,
-    },
+    ...(data.author?.name && {
+      author: { "@type": "Person", name: data.author.name },
+    }),
     publisher: {
       "@type": "Organization",
-      name: "Your News Site",
+      name: PROJECT.name,
+      logo: { "@type": "ImageObject", url: `${URLS.app}${SEO.image}` },
     },
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -110,7 +111,10 @@ const NewsPage = async ({ params }: Props) => {
       {/* JSON-LD for SEO */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // Escape "<" so a "</script>" inside any field can't close the tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <main className="min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-8rem)]">
         <div className="space-y-6 py-6">
@@ -124,14 +128,8 @@ const NewsPage = async ({ params }: Props) => {
           {/* Comment Section - Client Component */}
           <NewsCommentSection news={data} />
 
-          {/* Related News - Server Component */}
-          <div className="hidden xl:block">
-            <RelatedNewsSection news={data} initialPage={2} />
-          </div>
-
-          <div className="xl:hidden">
-            <RelatedNewsSection news={data} initialPage={1} />
-          </div>
+          {/* Related News - Client Component */}
+          <RelatedNewsSection news={data} />
         </div>
       </main>
     </>

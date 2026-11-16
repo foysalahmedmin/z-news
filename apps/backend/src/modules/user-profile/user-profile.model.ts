@@ -216,8 +216,8 @@ userProfileSchema.statics.isProfileExist = async function (_id: string) {
 
 userProfileSchema.statics.getProfileByUserId = async function (userId: string) {
   return await this.findOne({ user: userId })
-    .populate('user', 'name email image role')
-    .populate('following_authors', 'name email image')
+    .populate('user', 'name image role')
+    .populate('following_authors', 'name image')
     .populate('following_categories', 'name slug icon')
     .populate('badges.badge_id', 'name description icon');
 };

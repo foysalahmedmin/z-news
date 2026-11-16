@@ -35,7 +35,7 @@ const createPoll = async (userId: string, payload: Partial<TPoll>) => {
   });
 
   return await PollRepository.findOne({ _id: poll._id }, [
-    { path: 'created_by', select: 'name email' },
+    { path: 'created_by', select: 'name' },
     { path: 'category', select: 'name' },
     { path: 'news', select: 'title slug' },
   ]);
@@ -87,7 +87,7 @@ const getFeaturedPolls = async (limit: number = 5) => {
 const getPollsByNews = async (newsId: string) => {
   const polls = await PollRepository.findMany(
     { news: newsId },
-    [{ path: 'created_by', select: 'name email' }],
+    [{ path: 'created_by', select: 'name' }],
     { created_at: -1 },
   );
 
@@ -97,7 +97,7 @@ const getPollsByNews = async (newsId: string) => {
 // Get poll by ID
 const getPollById = async (pollId: string, userId?: string) => {
   const poll = await PollRepository.findOne({ _id: pollId }, [
-    { path: 'created_by', select: 'name email image' },
+    { path: 'created_by', select: 'name image' },
     { path: 'category', select: 'name' },
     { path: 'news', select: 'title slug' },
   ]);
@@ -113,7 +113,7 @@ const getPollById = async (pollId: string, userId?: string) => {
   }
 
   return {
-    ...poll.toObject(),
+    ...poll.toJSON(), // toJSON hides voter ids
     has_voted: hasVoted,
   };
 };
@@ -150,7 +150,7 @@ const updatePoll = async (
   await PollRepository.save(poll);
 
   return await PollRepository.findOne({ _id: poll._id }, [
-    { path: 'created_by', select: 'name email' },
+    { path: 'created_by', select: 'name' },
     { path: 'category', select: 'name' },
   ]);
 };
@@ -198,69 +198,66 @@ const vote = async (
     );
   }
 
-  // Check if user has already voted
-  if (userId) {
-    const hasVoted = await PollRepository.hasUserVoted(pollId, userId);
-    if (hasVoted) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'You have already voted on this poll',
-      );
-    }
-  } else if (guestId) {
-    const hasVoted = poll.votes.some((vote) => vote.guest_id === guestId);
-    if (hasVoted) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'You have already voted on this poll',
-      );
-    }
-  }
-
-  // Validate option indices
-  for (const index of optionIndices) {
+  // Validate option indices (duplicates would count twice)
+  const indices = [...new Set(optionIndices)];
+  for (const index of indices) {
     if (index < 0 || index >= poll.options.length) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid option index');
     }
   }
 
   // Check multiple votes
-  if (!poll.allow_multiple_votes && optionIndices.length > 1) {
+  if (!poll.allow_multiple_votes && indices.length > 1) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Multiple votes are not allowed for this poll',
     );
   }
 
-  if (poll.allow_multiple_votes && optionIndices.length > poll.max_votes) {
+  if (poll.allow_multiple_votes && indices.length > poll.max_votes) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `You can select maximum ${poll.max_votes} options`,
     );
   }
 
-  // Record votes
-  for (const index of optionIndices) {
-    poll.options[index].votes += 1;
-
-    if (userId) {
-      poll.options[index].voters.push(
-        userId as unknown as mongoose.Types.ObjectId,
-      );
-    }
-
-    poll.votes.push({
-      user: userId as unknown as mongoose.Types.ObjectId,
-      guest_id: guestId,
-      option_index: index,
-      voted_at: new Date(),
-    });
+  // Record votes atomically: the filter only matches if this voter has no vote yet, so
+  // concurrent or repeated requests can't double-vote.
+  // shortcut: every vote is kept in the poll's votes[] array (document grows with each
+  // vote); move votes to their own collection if polls get tens of thousands of votes.
+  const notVotedYet = userId
+    ? { 'votes.user': { $ne: userId } }
+    : { 'votes.guest_id': { $ne: guestId } };
+  const inc: Record<string, number> = {
+    total_votes: indices.length,
+    unique_voters: 1,
+  };
+  const push: Record<string, unknown> = {
+    votes: {
+      $each: indices.map((index) => ({
+        user: userId,
+        guest_id: userId ? undefined : guestId,
+        option_index: index,
+        voted_at: now,
+      })),
+    },
+  };
+  for (const index of indices) {
+    inc[`options.${index}.votes`] = 1;
+    if (userId) push[`options.${index}.voters`] = userId;
   }
 
-  poll.total_votes += optionIndices.length;
-  poll.unique_voters += 1;
+  const updated = await PollRepository.recordVote(
+    { _id: pollId, ...notVotedYet },
+    { $inc: inc, $push: push },
+  );
 
-  await PollRepository.save(poll);
+  if (!updated) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You have already voted on this poll',
+    );
+  }
 
   // Update user activity stats
   if (userId) {
@@ -271,7 +268,7 @@ const vote = async (
   }
 
   return await PollRepository.findOne({ _id: poll._id }, [
-    { path: 'created_by', select: 'name email' },
+    { path: 'created_by', select: 'name' },
     { path: 'category', select: 'name' },
   ]);
 };

@@ -1,4 +1,6 @@
 import mongoose, { Query, Schema } from 'mongoose';
+import { invalidateNamespaces } from '../../utils/cache.utils';
+import { sanitizeHtmlPaths } from '../../utils/sanitize-html';
 import { TNews, TNewsDocument, TNewsModel } from './news.type';
 
 const newsSchema = new Schema<TNewsDocument>(
@@ -113,15 +115,10 @@ const newsSchema = new Schema<TNewsDocument>(
       },
     },
 
+    // Optional editor-set expiry; the scheduler archives the article once it passes.
+    // No default: articles must not silently expire.
     expired_at: {
       type: Date,
-      default: function (this: TNewsDocument) {
-        if (this.status === 'published') {
-          const publishedAt = this.published_at || new Date();
-          return new Date(publishedAt.getTime() + 1 * 24 * 60 * 60 * 1000);
-        }
-        return undefined;
-      },
       validate: {
         validator: function (value: Date) {
           if (this.published_at && value) {
@@ -261,44 +258,15 @@ newsSchema.virtual('news_break', {
   justOne: true,
 });
 
-newsSchema.virtual('views', {
-  ref: 'View',
-  localField: '_id',
-  foreignField: 'news',
-  count: true,
-  match: { is_deleted: { $ne: true } },
-});
-
-newsSchema.virtual('likes', {
-  ref: 'Reaction',
-  localField: '_id',
-  foreignField: 'news',
-  count: true,
-  match: { type: 'like', is_deleted: { $ne: true } },
-});
-
-newsSchema.virtual('dislikes', {
-  ref: 'Reaction',
-  localField: '_id',
-  foreignField: 'news',
-  count: true,
-  match: { type: 'dislike', is_deleted: { $ne: true } },
-});
-
-newsSchema.virtual('comments', {
-  ref: 'Comment',
-  localField: '_id',
-  foreignField: 'news',
-  count: true,
-  match: { is_deleted: { $ne: true } },
-});
-
 // toJSON override to remove sensitive fields from output
 newsSchema.methods.toJSON = function () {
   const News = this.toObject();
   delete News.is_deleted;
   return News;
 };
+
+// Article HTML is rendered raw by the frontend: sanitize it on every write path.
+sanitizeHtmlPaths(newsSchema, ['content']);
 
 // Pre-save middleware to calculate word count and reading time
 newsSchema.pre('save', function (next) {
@@ -339,6 +307,29 @@ newsSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
   next();
 });
+
+// Any news write invalidates the news cache, plus headline/break caches that embed news
+// title/slug, and revalidates the frontend. Hooks cover every service, job and workflow.
+const invalidateNewsCaches = () =>
+  invalidateNamespaces('news', 'news-headline', 'news-break');
+
+newsSchema.post('save', invalidateNewsCaches);
+newsSchema.post('insertMany', invalidateNewsCaches);
+newsSchema.post(
+  ['findOneAndUpdate', 'findOneAndDelete'],
+  async (doc: unknown) => {
+    if (doc) await invalidateNewsCaches();
+  },
+);
+// Skip no-op writes (the scheduler runs updateMany every minute).
+newsSchema.post(
+  ['updateOne', 'updateMany', 'deleteOne', 'deleteMany'],
+  async (result: { modifiedCount?: number; deletedCount?: number }) => {
+    if (result?.modifiedCount || result?.deletedCount) {
+      await invalidateNewsCaches();
+    }
+  },
+);
 
 // Static methods
 newsSchema.statics.isNewsExist = async function (_id: string) {

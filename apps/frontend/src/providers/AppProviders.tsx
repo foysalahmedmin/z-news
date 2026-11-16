@@ -15,7 +15,19 @@ const AppProviders: React.FC<{ children: React.ReactNode }> = ({
   // scope) so it isn't shared across users on the server and isn't
   // recreated on every render. Admin pages should use this shared client
   // rather than creating their own local QueryClientProvider.
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // Avoid refetching everything on every mount / tab switch;
+            // pages that need live data set refetchInterval themselves.
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
 
   return (
     <GoogleOAuthProvider clientId={ENV.google_client_id}>

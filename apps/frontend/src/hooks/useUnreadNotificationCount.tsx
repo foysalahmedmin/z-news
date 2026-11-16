@@ -10,34 +10,23 @@ import { useQuery } from "@tanstack/react-query";
 // (see that file's module notes for why this polls instead of a live
 // socket.io push).
 //
-// Response shape: `getSelfNotificationRecipients` (backend) returns the
-// unread count in two equivalent places when queried with `is_read: false`:
-// - `meta.total` — the main filtered query's own count (since the query is
-//   itself filtered to unread items, this already *is* the unread count).
-// - `meta.statistics.unread` — an independent, fixed-filter count computed
-//   by `AppQueryFind.execute()`'s `statisticsQueries` (always counts
-//   `{ is_read: false, recipient: user._id }` regardless of the main
-//   query's own filter).
-// Both resolve to the same number here. This hook prefers
-// `meta.statistics.unread` to match NotificationsView.tsx's existing
-// convention, falling back to `meta.total`.
+// Shares the ["notifications-count"] query (same key, same request) with the
+// notifications pages, so their invalidations after read/delete also update
+// every bell. `meta.statistics.unread` is computed by the backend with a fixed
+// `{ is_read: false, recipient }` filter regardless of the main query.
 type TNotificationStatistics = { unread?: number };
 
 export function useUnreadNotificationCount() {
   const { data, isLoading } = useQuery({
-    queryKey: ["notifications-unread-count"],
-    queryFn: () =>
-      fetchNotificationRecipientsBySelf({
-        is_read: false,
-        is_count_only: true,
-      }),
+    queryKey: ["notifications-count"],
+    queryFn: () => fetchNotificationRecipientsBySelf({ is_count_only: true }),
     refetchInterval: 30000,
   });
 
   const statistics = data?.meta?.statistics as
     | TNotificationStatistics
     | undefined;
-  const count = Number(statistics?.unread ?? data?.meta?.total ?? 0);
+  const count = Number(statistics?.unread ?? 0);
 
   return { count, isLoading };
 }

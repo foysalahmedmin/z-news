@@ -1,4 +1,5 @@
 import mongoose, { Query, Schema } from 'mongoose';
+import { sanitizeHtmlPaths } from '../../utils/sanitize-html';
 import {
   TArticleVersion,
   TArticleVersionDocument,
@@ -91,6 +92,9 @@ articleVersionSchema.index(
   { news: 1, version_number: 1 },
   { unique: true, name: 'unique_news_version' },
 );
+
+// Snapshots are rendered raw in the admin version diff: sanitize on every write path.
+sanitizeHtmlPaths(articleVersionSchema, ['content_snapshot']);
 
 // toJSON override to remove sensitive fields
 articleVersionSchema.methods.toJSON = function () {

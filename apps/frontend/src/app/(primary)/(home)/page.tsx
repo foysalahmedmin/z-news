@@ -14,7 +14,8 @@ export const metadata: Metadata = {
   description: "Z-News",
 };
 
-export const revalidate = 15;
+// Fresh content arrives through on-demand revalidation (app/api/revalidate).
+export const revalidate = 300;
 
 const HomePage: React.FC = async () => {
   const { data: events } = await fetchEvents({

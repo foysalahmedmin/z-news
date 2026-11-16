@@ -55,19 +55,25 @@ const CategoryNewsSection: React.FC<{
     const hasAd = false;
     const endPoint = hasAd ? 6 : 10;
     const topData = data?.slice(0, endPoint);
-
-    if (data.length < 10) return null;
+    // The masonry grid has fixed rows sized for 10 items; with fewer it
+    // would leave empty rows, so fall back to a plain auto-flow grid.
+    const isFull = data.length >= 10;
 
     return (
       <section className="">
         <div className="container space-y-6 md:space-y-10">
           <CategoryHeader />
           <div>
-            <div className="grid gap-4 md:grid-flow-col md:grid-cols-2 md:grid-rows-6 lg:grid-cols-3 lg:grid-rows-4">
+            <div
+              className={cn(
+                "grid gap-4 md:grid-cols-2 lg:grid-cols-3",
+                isFull && "md:grid-flow-col md:grid-rows-6 lg:grid-rows-4",
+              )}
+            >
               {topData?.map((item, index) => (
                 <NewsCard
                   className={cn("", {
-                    "md:row-span-3 md:text-xl": index === 0,
+                    "md:row-span-3 md:text-xl": isFull && index === 0,
                   })}
                   classNameDescription={cn("", {
                     "md:line-clamp-2 lg:line-clamp-1 xl:line-clamp-2 2xl:line-clamp-3":
@@ -95,8 +101,6 @@ const CategoryNewsSection: React.FC<{
     const hasAd = false;
     const endPoint = hasAd ? 6 : 10;
     const topData = data?.slice(0, endPoint);
-
-    if (data.length < 10) return null;
 
     return (
       <section className="bg-muted/50 py-10 md:py-16">
@@ -146,6 +150,7 @@ const CategoryNewsSection: React.FC<{
                 classNameDescription="text-base md:text-lg px-6 pb-6 line-clamp-4"
                 type="list"
                 news={lead}
+                sizes="(min-width: 768px) 50vw, 100vw"
               />
             </div>
           )}

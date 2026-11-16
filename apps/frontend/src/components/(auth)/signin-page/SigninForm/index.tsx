@@ -13,17 +13,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import React, { useState } from "react";
 import { toast } from "react-toastify";
+import { resolveRedirectTarget } from "@/utils/resolveRedirectTarget";
 
 type SigninFormErrors = Partial<Record<keyof SignInPayload, string>>;
-
-// Only follow `redirect` when it is a same-origin relative path, to guard
-// against open-redirect payloads such as `//evil.com` or `https://evil.com`.
-const resolveRedirectTarget = (redirect: string | null): string => {
-  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-    return redirect;
-  }
-  return "/";
-};
 
 const SigninForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);

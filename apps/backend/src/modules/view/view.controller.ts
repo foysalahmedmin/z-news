@@ -15,10 +15,12 @@ export const createView = catchAsync(async (req, res) => {
 
 export const getSelfNewsView = catchAsync(async (req, res) => {
   const { news_id } = req.params;
+  // POST records the view (once per user/guest); GET only reads the count.
   const { data, meta } = await ViewServices.getSelfNewsView(
     req.user,
     req.guest,
     news_id,
+    req.method === 'POST',
   );
   sendResponse(res, {
     status: httpStatus.OK,

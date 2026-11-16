@@ -5,29 +5,32 @@ import NewsCardSkeleton from "@/components/skeletons/cards-skeleton/NewsCardSkel
 import { Button } from "@/components/ui/Button";
 import { fetchBulkNews } from "@/services/news.service";
 import { TCategory } from "@/types/category.type";
-import { TNews } from "@/types/news.type";
+import { TBulkNewsResponse, TNews } from "@/types/news.type";
 import React, { useEffect, useState } from "react";
 
 type CategoryNewsMoreSectionProps = {
   category?: Partial<TCategory>;
+  /** Server-rendered first page; this component only fetches page 2+. */
+  initial?: TBulkNewsResponse;
 };
 
 const CategoryNewsMoreSection: React.FC<CategoryNewsMoreSectionProps> = ({
   category,
+  initial,
 }) => {
   const [page, setPage] = useState<number>(1);
-  const [data, setData] = useState<TNews[]>([]);
+  const [data, setData] = useState<TNews[]>(initial?.data || []);
   const [meta, setMeta] = useState<{
     total?: number;
     limit?: number;
     page?: number;
-  }>({});
+  }>(initial?.meta || {});
   const [isLoading, setIsLoading] = useState(false);
 
   const hasMore = !!(meta?.total && meta?.total > data?.length);
 
   useEffect(() => {
-    if (!category?._id) return;
+    if (!category?._id || page === 1) return;
     const fetchData = async () => {
       try {
         setIsLoading(true);

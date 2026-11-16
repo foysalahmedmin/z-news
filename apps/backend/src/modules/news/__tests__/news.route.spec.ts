@@ -97,7 +97,10 @@ describe('News Routes', () => {
 
       expect(res.status).toBe(httpStatus.OK);
       expect(res.body.success).toBe(true);
-      expect(NewsService.getNews).toHaveBeenCalledWith(mockId);
+      expect(NewsService.getNews).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: 'user123' }),
+        mockId,
+      );
     });
   });
 

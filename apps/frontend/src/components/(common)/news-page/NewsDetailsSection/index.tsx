@@ -1,4 +1,6 @@
 import { TNews } from "@/types/news.type";
+import { addHeadingIds } from "@/utils/addHeadingIds";
+import { formatDate } from "@/utils/formatDate";
 import { parseYouTubeUrl } from "@/utils/youtubeUrlUtils";
 import {
   BookOpen,
@@ -37,31 +39,9 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
   const thumbnail =
     news?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
 
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return "";
-    return new Date(date).toLocaleString("bn-BD", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // Server-side: give content headings ids and build the table of contents.
+  const { html: content, headings } = addHeadingIds(news?.content || "");
 
-  // Extract headings for Table of Contents
-  const extractHeadings = (html: string) => {
-    if (typeof window === "undefined") return [];
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const headings = Array.from(doc.querySelectorAll("h2, h3")).map((h) => ({
-      text: h.textContent,
-      id: h.id || h.textContent?.toLowerCase().replace(/\s+/g, "-"),
-      level: h.tagName.toLowerCase(),
-    }));
-    return headings;
-  };
-
-  const headings = news?.content ? extractHeadings(news.content) : [];
   return (
     <div className="container grid grid-cols-1 gap-6 xl:grid-cols-12">
       <div className="hidden space-y-6 xl:col-span-3 xl:block 2xl:col-span-3">
@@ -73,87 +53,6 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
             >
               {news?.category?.name}
             </Link>
-          </div>
-          <div className="text-muted-foreground flex flex-wrap items-center text-sm">
-            {/* Author */}
-            {news?.author?.name && (
-              <div className="border-muted-foreground flex flex-wrap items-center gap-2 border-l px-2">
-                <Edit2 size={16} />
-                <span className="font-medium">{news?.author?.name}</span>
-                {news?.author?._id && (
-                  <FollowAuthorButton
-                    authorId={news.author._id}
-                    authorName={news.author.name}
-                    compact
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Writer */}
-            {news?.writer && (
-              <div className="border-muted-foreground flex items-center gap-2 border-l px-2">
-                <Edit2 size={16} />
-                <span className="font-medium">{news?.writer}</span>
-              </div>
-            )}
-
-            {/* Published Date */}
-            <div className="border-muted-foreground flex items-center gap-2 border-l px-2">
-              <Calendar size={16} />
-              <span>প্রকাশিত:</span>
-              <time
-                dateTime={
-                  news?.published_at &&
-                  new Date(news?.published_at).toISOString()
-                }
-              >
-                {formatDate(news?.published_at)}
-              </time>
-            </div>
-
-            {/* Last Updated */}
-            {news?.is_edited && news?.edited_at && (
-              <div className="border-muted-foreground flex items-center gap-2 border-l px-2">
-                <Clock size={16} />
-                <span>আপডেট:</span>
-                <time
-                  dateTime={
-                    news?.edited_at && new Date(news?.edited_at).toISOString()
-                  }
-                >
-                  {formatDate(news?.edited_at)}
-                </time>
-              </div>
-            )}
-
-            {/* Reading Time */}
-            {news?.reading_time && news?.reading_time > 0 && (
-              <div className="border-muted-foreground flex items-center gap-2 border-l px-2 text-blue-600">
-                <BookOpen size={16} />
-                <span>পড়া যাবে: {news.reading_time} মিনিট</span>
-              </div>
-            )}
-
-            {/* Fact Check Badge */}
-            {news?.fact_checked && (
-              <div className="border-muted-foreground flex items-center gap-2 border-l px-2 text-green-600">
-                <CheckCircle size={16} />
-                <span className="font-bold">তথ্য যাচাইকৃত</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-between border-y py-2">
-          <div className="flex items-center gap-4">
-            <Reaction news={news!} />
-            <Print news={news!} />
-            <Share news={news!} />
-          </div>
-
-          {/* View Count */}
-          <div className="flex items-center gap-4">
-            <View news={news!} />
           </div>
         </div>
         {/* Event */}
@@ -201,7 +100,7 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
           </div>
 
           {/* Meta Information */}
-          <div className="text-muted-foreground flex flex-wrap items-center text-sm xl:hidden">
+          <div className="text-muted-foreground flex flex-wrap items-center text-sm">
             {/* Author */}
             {news?.author?.name && (
               <div className="border-muted-foreground flex flex-wrap items-center gap-2 border-l px-2">
@@ -235,7 +134,7 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
                   new Date(news?.published_at).toISOString()
                 }
               >
-                {formatDate(news?.published_at)}
+                {formatDate(news?.published_at, "datetime")}
               </time>
             </div>
 
@@ -249,8 +148,24 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
                     news?.edited_at && new Date(news?.edited_at).toISOString()
                   }
                 >
-                  {formatDate(news?.edited_at)}
+                  {formatDate(news?.edited_at, "datetime")}
                 </time>
+              </div>
+            )}
+
+            {/* Reading Time */}
+            {news?.reading_time && news?.reading_time > 0 && (
+              <div className="border-muted-foreground flex items-center gap-2 border-l px-2 text-blue-600">
+                <BookOpen size={16} />
+                <span>পড়া যাবে: {news.reading_time} মিনিট</span>
+              </div>
+            )}
+
+            {/* Fact Check Badge */}
+            {news?.fact_checked && (
+              <div className="border-muted-foreground flex items-center gap-2 border-l px-2 text-green-600">
+                <CheckCircle size={16} />
+                <span className="font-bold">তথ্য যাচাইকৃত</span>
               </div>
             )}
 
@@ -267,7 +182,8 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-y py-2 xl:hidden">
+        {/* Rendered once for every screen size (each widget fetches/records on mount). */}
+        <div className="flex items-center justify-between border-y py-2">
           <div className="flex items-center gap-4">
             <Reaction news={news!} />
             <Print news={news!} />
@@ -309,7 +225,8 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
                     width={800}
                     height={450}
                     className="aspect-video h-auto w-full rounded-md object-cover shadow"
-                    priority
+                    sizes="(min-width: 1280px) 50vw, (min-width: 896px) 896px, 100vw"
+                    preload
                   />
                 </div>
               )}
@@ -318,9 +235,12 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
 
           {/* Content */}
           <div className="prose prose-lg news-content max-w-none">
-            {/* Table of Contents - Inline for Mobile/Compact */}
+            {/* Table of Contents */}
             {headings.length > 0 && (
-              <div className="bg-muted my-6 rounded-lg p-4 xl:hidden">
+              <nav
+                aria-label="সূচিপত্র"
+                className="bg-muted my-6 rounded-lg p-4"
+              >
                 <div className="mb-2 flex items-center gap-2 font-bold">
                   <List size={20} />
                   সূচিপত্র
@@ -334,11 +254,13 @@ const NewsDetailsSection: React.FC<TNewsSectionProps> = ({ news }) => {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </nav>
             )}
 
+            {/* Article HTML is sanitized by the backend on write (the trust
+                boundary); only heading ids are added here. */}
             <div
-              dangerouslySetInnerHTML={{ __html: news?.content || "" }}
+              dangerouslySetInnerHTML={{ __html: content }}
               className="text-foreground leading-relaxed whitespace-pre-line"
             />
           </div>

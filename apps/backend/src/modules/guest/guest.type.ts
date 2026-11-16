@@ -7,7 +7,7 @@ export type TGuest = {
   token: string;
   name?: string;
   email?: string;
-  session_id: string;
+  session_id?: string;
   ip_address?: string;
   user_agent?: string;
   fingerprint?: string;

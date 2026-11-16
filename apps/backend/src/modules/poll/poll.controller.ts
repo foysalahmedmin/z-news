@@ -104,9 +104,11 @@ const updatePoll = catchAsync(async (req, res) => {
 const vote = catchAsync(async (req, res) => {
   const { pollId } = req.params;
   const userId = req.user?._id;
-  const { option_indices, guest_id } = req.body;
+  const { option_indices } = req.body;
+  // Anonymous dedup uses the server-side guest session, never a client-sent id.
+  const guestId = userId ? undefined : req.guest?._id?.toString();
 
-  const poll = await PollService.vote(pollId, userId, option_indices, guest_id);
+  const poll = await PollService.vote(pollId, userId, option_indices, guestId);
 
   sendResponse(res, {
     success: true,

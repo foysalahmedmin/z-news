@@ -47,6 +47,7 @@ describe('Poll Service', () => {
     _id: new mongoose.Types.ObjectId(mockPollId),
     created_by: new mongoose.Types.ObjectId(mockUserId),
     toObject: jest.fn().mockReturnThis(),
+    toJSON: jest.fn().mockReturnThis(),
     softDelete: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
     status: 'active',
@@ -102,6 +103,47 @@ describe('Poll Service', () => {
       await expect(PollService.getPollById(mockPollId)).rejects.toThrow(
         new AppError(httpStatus.NOT_FOUND, 'Poll not found'),
       );
+    });
+  });
+
+  describe('vote', () => {
+    const votablePoll = {
+      ...mockPollDoc,
+      start_date: new Date(Date.now() - 60_000),
+    };
+
+    it('should record the vote with one conditional atomic update', async () => {
+      (PollRepository.findById as jest.Mock).mockResolvedValue(votablePoll);
+      (PollRepository.recordVote as jest.Mock).mockResolvedValue(votablePoll);
+      (PollRepository.findOne as jest.Mock).mockResolvedValue(votablePoll);
+
+      await PollService.vote(mockPollId, undefined, [1], 'guest-1');
+
+      expect(PollRepository.recordVote).toHaveBeenCalledWith(
+        { _id: mockPollId, 'votes.guest_id': { $ne: 'guest-1' } },
+        {
+          $inc: { total_votes: 1, unique_voters: 1, 'options.1.votes': 1 },
+          $push: {
+            votes: {
+              $each: [
+                expect.objectContaining({
+                  guest_id: 'guest-1',
+                  option_index: 1,
+                }),
+              ],
+            },
+          },
+        },
+      );
+    });
+
+    it('should reject a second vote by the same voter', async () => {
+      (PollRepository.findById as jest.Mock).mockResolvedValue(votablePoll);
+      (PollRepository.recordVote as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        PollService.vote(mockPollId, mockUserId, [0]),
+      ).rejects.toThrow('You have already voted on this poll');
     });
   });
 

@@ -83,7 +83,7 @@ export const findPaginated = async (
   data: TView[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const viewQuery = new AppQueryFind(View, { ...filter, ...query })
+  const viewQuery = new AppQueryFind(View, query, filter)
     .filter()
     .sort()
     .paginate()

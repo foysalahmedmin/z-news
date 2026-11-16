@@ -1,9 +1,11 @@
 {
   "name": "z-news-backend",
   "version": "1.0.0",
-  "type": "module",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
@@ -17,6 +19,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "sanitize:content": "node dist/scripts/sanitize-existing-content.js",
     "docker:dev": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev up -d --build",
     "docker:dev:stop": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev down",
     "docker:dev:logs": "TARGET=development NODE_ENV=development docker compose --env-file .env -f ../../infra/docker/docker-compose.yml --profile dev logs -f",
@@ -62,6 +65,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^10.0.10",
     "redis": "^6.2.1",
+    "sanitize-html": "^2.18.2",
     "socket.io": "^4.8.1",
     "zod": "^3.25.67"
   },
@@ -81,6 +85,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^24.0.8",
     "@types/nodemailer": "^8.0.2",
+    "@types/sanitize-html": "^2.16.2",
     "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^8.35.1",
     "@typescript-eslint/parser": "^8.35.1",

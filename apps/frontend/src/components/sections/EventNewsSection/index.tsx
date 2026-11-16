@@ -50,9 +50,8 @@ const EventNewsSection: React.FC<{
   // Default Layout: Original 3-column centered design
   if (layout === "default") {
     const lead = data?.[0];
+    // Fewer than 5 items just leaves side columns shorter/empty around the lead.
     const topData = data?.slice(1, 5);
-
-    if (data.length < 5) return null;
 
     return (
       <section className="bg-amber-500/5 py-10 md:py-16">
@@ -79,6 +78,7 @@ const EventNewsSection: React.FC<{
                 className="border-foreground/25 border border-dashed bg-transparent p-4 lg:h-full lg:text-3xl"
                 type="grid"
                 news={lead || {}}
+                sizes="(min-width: 1024px) 50vw, 100vw"
               />
             </div>
 
@@ -116,8 +116,6 @@ const EventNewsSection: React.FC<{
   if (layout === "standard") {
     const lead = data?.[0];
     const gridItems = data?.slice(1, 5) || [];
-
-    if (data.length < 5) return null;
 
     return (
       <section className="bg-muted/50 py-12 md:py-20">
@@ -193,6 +191,7 @@ const EventNewsSection: React.FC<{
                 classNameDescription="text-base md:text-lg px-6 pb-6 line-clamp-4"
                 type="list"
                 news={lead}
+                sizes="(min-width: 768px) 50vw, 100vw"
               />
             </div>
           )}

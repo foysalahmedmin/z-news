@@ -1,40 +1,32 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { fetchNewsView } from "@/services/view.service";
+import { recordNewsView } from "@/services/view.service";
 import { TNews } from "@/types/news.type";
 import { formatCount } from "@/utils/formatCount";
 import { Eye } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type ViewProps = {
   news: Partial<TNews>;
   className?: string;
 };
 
+// Records the page view (POST, once per article mount) and shows the count.
 const View: React.FC<ViewProps> = ({ news, className }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [viewCount, setViewCount] = useState(0);
+  // Guards against StrictMode's dev double-effect posting a second view.
+  const recordedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!news?._id) return;
-    const getView = async () => {
-      try {
-        if (!news?._id) return;
-        setIsLoading(true);
+    const id = news?._id;
+    if (!id || recordedFor.current === id) return;
+    recordedFor.current = id;
 
-        const { meta } = await fetchNewsView(news?._id);
-        const { views = 0 } = meta || {};
-        setViewCount((views as number) || 0);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    getView();
-  }, [news]);
+    recordNewsView(id)
+      .then(({ meta }) => setViewCount(Number(meta?.views) || 0))
+      .catch((error) => console.error(error));
+  }, [news?._id]);
 
   return (
     <div

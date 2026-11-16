@@ -1,19 +1,19 @@
 "use client";
 
 import { Dropdown, DropdownContent, DropdownItem, DropdownSeparator } from "@/components/ui/Dropdown";
-import { URLS } from "@/config";
 import useUser from "@/hooks/states/useUser";
 import { LogOut, User, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { userImageUrl } from "@/utils/userImageUrl";
 
 const Profile: React.FC = () => {
   const router = useRouter();
   const { user, clearUser } = useUser();
   const { image: imageFileName, name, email, role } = user?.info || {};
 
-  const image = imageFileName ? URLS.user + "/" + imageFileName : "";
+  const image = userImageUrl(imageFileName);
 
   const [isOpen, setIsOpen] = React.useState(false);
 

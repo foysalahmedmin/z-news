@@ -43,7 +43,7 @@ router.patch(
   '/bulk/self',
   auth('admin', 'author'),
   validation(NewsValidations.updateSelfBulkNewsValidationSchema),
-  NewsControllers.updateBulkNews,
+  NewsControllers.updateSelfBulkNews,
 );
 
 router.patch(
@@ -68,9 +68,11 @@ router.patch(
 );
 
 // DELETE
+// Uploads are shared across articles, so only editorial staff may delete them
+// (the service also rejects paths outside uploads/).
 router.delete(
   '/file/:path',
-  auth('admin', 'author'),
+  auth('admin', 'editor'),
   NewsControllers.deleteNewsFile,
 );
 
@@ -121,7 +123,7 @@ router.post(
   '/file/:type',
   auth('admin', 'author'),
   (req, res, next) => {
-    const { type } = req.params;
+    const { type } = req.params as { type: string };
 
     // Validate type parameter
     const validTypes = ['image', 'video', 'audio', 'file'];

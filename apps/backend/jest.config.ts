@@ -15,7 +15,13 @@ const config: Config = {
         },
       },
     ],
+    '^.+\\.js$': ['@swc/jest', { jsc: { target: 'es2022' } }],
   },
+  // sanitize-html's parser (htmlparser2 and its dom* / entities deps) ships ESM only;
+  // let swc compile those to CommonJS for Jest.
+  transformIgnorePatterns: [
+    '/node_modules/(?!(\\.pnpm/)?(htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer)[@/])',
+  ],
   clearMocks: true,
   setupFiles: ['<rootDir>/src/test-setup.ts'],
   moduleNameMapper: {

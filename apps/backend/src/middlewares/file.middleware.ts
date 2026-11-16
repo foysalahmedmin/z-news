@@ -16,6 +16,38 @@ type TFile = {
   allowedTypes?: string[];
 };
 
+// The stored extension comes from this map, never from the client's filename, so an upload
+// can't become .html/.js/.svg and run same-origin from /uploads. Anything else is rejected.
+export const SAFE_UPLOAD_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/avif': '.avif',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/ogg': '.ogv',
+  'video/quicktime': '.mov',
+  'video/mov': '.mov',
+  'video/avi': '.avi',
+  'video/x-msvideo': '.avi',
+  'video/wmv': '.wmv',
+  'video/x-ms-wmv': '.wmv',
+  'audio/mpeg': '.mp3',
+  'audio/mp3': '.mp3',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/ogg': '.ogg',
+  'audio/m4a': '.m4a',
+  'audio/mp4': '.m4a',
+  'application/pdf': '.pdf',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    '.docx',
+  'text/plain': '.txt',
+};
+
 const file = (...files: TFile[]) => {
   // 🚨 Disable file system in serverless (Vercel)
   if (process.env.VERCEL === '1') {
@@ -35,10 +67,15 @@ const file = (...files: TFile[]) => {
       cb(null, dir);
     },
     filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const baseName = path.basename(file.originalname, ext);
+      const baseName = path.basename(
+        file.originalname,
+        path.extname(file.originalname),
+      );
       const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      cb(null, `${baseName}-${uniqueSuffix}${ext}`);
+      cb(
+        null,
+        `${baseName}-${uniqueSuffix}${SAFE_UPLOAD_EXTENSIONS[file.mimetype]}`,
+      );
     },
   });
 
@@ -61,7 +98,10 @@ const file = (...files: TFile[]) => {
       );
     }
 
-    if (config.allowedTypes && !config.allowedTypes.includes(file.mimetype)) {
+    if (
+      !SAFE_UPLOAD_EXTENSIONS[file.mimetype] ||
+      (config.allowedTypes && !config.allowedTypes.includes(file.mimetype))
+    ) {
       return cb(
         new AppError(
           httpStatus.BAD_REQUEST,

@@ -138,8 +138,16 @@ const workersToUse = Math.max(1, Math.floor(numCPUs * 0.75));
 
 if (config.cluster_enabled && cluster.isPrimary) {
   console.log(`👑 Primary ${process.pid} is running`);
+
+  // Exactly one worker runs the scheduler; a re-forked worker inherits the dead one's role.
+  const schedulerWorkers = new Set<number>();
+  const forkWorker = (runScheduler: boolean) => {
+    const worker = cluster.fork({ RUN_SCHEDULER: String(runScheduler) });
+    if (runScheduler) schedulerWorkers.add(worker.id);
+  };
+
   for (let i = 0; i < workersToUse; i++) {
-    cluster.fork();
+    forkWorker(i === 0);
   }
 
   let restartCount = 0;
@@ -149,6 +157,7 @@ if (config.cluster_enabled && cluster.isPrimary) {
 
   cluster.on('exit', (worker) => {
     const now = Date.now();
+    const wasScheduler = schedulerWorkers.delete(worker.id);
 
     if (now - firstRestartTime > RESTART_WINDOW) {
       // Reset restart window
@@ -158,7 +167,7 @@ if (config.cluster_enabled && cluster.isPrimary) {
 
     if (restartCount < MAX_RESTARTS) {
       console.warn(`⚰️ Worker ${worker.process.pid} died. Restarting...`);
-      cluster.fork();
+      forkWorker(wasScheduler);
       restartCount++;
     } else {
       console.error(

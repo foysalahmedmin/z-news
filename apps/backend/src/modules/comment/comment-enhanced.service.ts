@@ -11,27 +11,75 @@ import { TCommentDocument } from './comment.type';
 
 const CACHE_PREFIX = 'comment';
 
+// Responses that reach users other than the commenter: never the guest's session token
+// (`guest`) or the commenter's email.
+const toPublicComment = <T>(comment: T): T => {
+  if (!comment) return comment;
+  const {
+    guest: _guest,
+    email: _email,
+    ...rest
+  } = comment as Record<string, unknown>;
+  return rest as T;
+};
+
 // ============ THREADING SERVICES ============
 
-// Get threaded comments for a news article
-export const getThreadedComments = async (newsId: string) => {
-  const topLevelComments = await CommentRepository.getThreadedComments(newsId);
+// shortcut: only the newest 100 top-level comments (pinned first) and 2000 replies are
+// returned, no pagination; add cursor pagination when articles regularly exceed that.
+const THREAD_TOP_LEVEL_LIMIT = 100;
+const THREAD_REPLY_LIMIT = 2000;
 
-  // For each top-level comment, fetch its replies
-  const commentsWithReplies = await Promise.all(
-    topLevelComments.map(async (comment) => {
-      const replies = await CommentRepository.getCommentReplies(
-        comment._id.toString(),
-      );
-      return {
-        ...comment.toObject(),
-        replies,
-        reply_count: replies?.length || 0,
-      };
-    }),
-  );
+type TThreadNode = Record<string, unknown> & {
+  is_owner: boolean;
+  replies: TThreadNode[];
+  reply_count: number;
+};
 
-  return commentsWithReplies;
+// Get threaded comments for a news article: visible (approved) comments only, 3 queries
+// in total, `is_owner` computed here so `guest` (the guest's session token) and `email`
+// never leave the server.
+export const getThreadedComments = async (
+  newsId: string,
+  viewer: { userId?: string; guestToken?: string } = {},
+): Promise<{ data: TThreadNode[]; total: number }> => {
+  const [topLevel, replies, total] = await Promise.all([
+    CommentRepository.getThreadedComments(newsId, THREAD_TOP_LEVEL_LIMIT),
+    CommentRepository.getThreadReplies(newsId, THREAD_REPLY_LIMIT),
+    CommentRepository.count({ news: newsId, status: 'approved' }),
+  ]);
+
+  const nodes = new Map<string, TThreadNode>();
+  for (const doc of [...topLevel, ...replies]) {
+    const {
+      guest,
+      email: _email,
+      ...comment
+    } = doc.toObject() as Record<string, unknown>;
+    const ownerId = (comment.user as { _id?: unknown } | null)?._id;
+    nodes.set(String(doc._id), {
+      ...comment,
+      is_owner:
+        (!!viewer.userId && String(ownerId) === viewer.userId) ||
+        (!!viewer.guestToken && guest === viewer.guestToken),
+      replies: [],
+      reply_count: 0,
+    });
+  }
+
+  // Replies are sorted oldest first, so each parent's replies keep that order.
+  for (const reply of replies) {
+    const parent = nodes.get(String(reply.parent_comment));
+    if (parent) {
+      parent.replies.push(nodes.get(String(reply._id))!);
+      parent.reply_count = parent.replies.length;
+    }
+  }
+
+  return {
+    data: topLevel.map((doc) => nodes.get(String(doc._id))!),
+    total,
+  };
 };
 
 // Get replies for a specific comment
@@ -114,11 +162,13 @@ export const createReply = async (
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await CommentRepository.findByIdLean(reply._id.toString(), [
-    { path: 'user', select: 'name email image' },
-    { path: 'reply_to_user', select: 'name' },
-    { path: 'parent_comment', select: 'content' },
-  ]);
+  return toPublicComment(
+    await CommentRepository.findByIdLean(reply._id.toString(), [
+      { path: 'user', select: 'name image' },
+      { path: 'reply_to_user', select: 'name' },
+      { path: 'parent_comment', select: 'content' },
+    ]),
+  );
 };
 
 // ============ REACTION SERVICES ============
@@ -174,10 +224,12 @@ export const addReaction = async (
   // Make sure to invalidate cache
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await CommentRepository.findByIdLean(comment._id.toString(), [
-    { path: 'user', select: 'name email image' },
-    { path: 'reactions', select: 'user type created_at' },
-  ]);
+  return toPublicComment(
+    await CommentRepository.findByIdLean(comment._id.toString(), [
+      { path: 'user', select: 'name image' },
+      { path: 'reactions', select: 'user type created_at' },
+    ]),
+  );
 };
 
 // Remove reaction from comment
@@ -195,10 +247,12 @@ export const removeReaction = async (comment_id: string, userId: string) => {
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await CommentRepository.findByIdLean(comment._id.toString(), [
-    { path: 'user', select: 'name email image' },
-    { path: 'reactions', select: 'user type created_at' },
-  ]);
+  return toPublicComment(
+    await CommentRepository.findByIdLean(comment._id.toString(), [
+      { path: 'user', select: 'name image' },
+      { path: 'reactions', select: 'user type created_at' },
+    ]),
+  );
 };
 
 // Get reaction summary for a comment
@@ -340,7 +394,7 @@ export const flagComment = async (
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return comment;
+  return toPublicComment(comment.toObject());
 };
 
 // Unflag a comment (remove user's flag)
@@ -360,7 +414,7 @@ export const unflagComment = async (comment_id: string, userId: string) => {
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return comment;
+  return toPublicComment(comment.toObject());
 };
 
 // Moderate a comment (Admin only)

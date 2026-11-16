@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TNews } from "@/types/news.type";
+import { formatDate } from "@/utils/formatDate";
 import { parseYouTubeUrl } from "@/utils/youtubeUrlUtils";
 import { Dot } from "lucide-react";
 import Image from "next/image";
@@ -10,6 +11,8 @@ export type TNewsCardOverlapProps = {
   className?: string;
   classNameContent?: string;
   classNameThumbnail?: string;
+  sizes?: string;
+  preload?: boolean;
 };
 
 const NewsCardOverlap: React.FC<TNewsCardOverlapProps> = ({
@@ -17,6 +20,8 @@ const NewsCardOverlap: React.FC<TNewsCardOverlapProps> = ({
   className,
   classNameContent,
   classNameThumbnail,
+  sizes = "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw",
+  preload,
 }) => {
   const { slug, title, sub_title, published_at, category } = news || {};
   const { thumbnails } = news?.youtube
@@ -24,13 +29,7 @@ const NewsCardOverlap: React.FC<TNewsCardOverlapProps> = ({
     : {};
 
   const thumbnail = news?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
-  const date =
-    published_at &&
-    new Date(published_at).toLocaleString("bn-BD", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+  const date = formatDate(published_at, "date");
   return (
     <Link
       href={`/news/${slug}`}
@@ -44,6 +43,8 @@ const NewsCardOverlap: React.FC<TNewsCardOverlapProps> = ({
           alt={title || "Thumbnail"}
           width={500}
           height={280}
+          sizes={sizes}
+          preload={preload}
           // onError={(e) => {
           //   e.currentTarget.src = "/thumbnail.png";
           // }}

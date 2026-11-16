@@ -4,6 +4,7 @@ import AppError from '../../builder/app-error';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
+  invalidateCache,
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
@@ -118,6 +119,7 @@ export const getSelfNewsView = async (
   user: TJwtPayload,
   guest: TGuest,
   news_id: string,
+  record = false,
 ): Promise<{ data: TView | null; meta: { views: number } }> => {
   if (!news_id) {
     throw new AppError(httpStatus.NOT_FOUND, 'News ID is required');
@@ -128,8 +130,9 @@ export const getSelfNewsView = async (
     : guest?.token
       ? { news: news_id, guest: guest.token }
       : undefined;
+  const countKey = generateCacheKey(CACHE_PREFIX, ['news', news_id, 'count']);
 
-  if (query) {
+  if (record && query) {
     const isSelfViewed = await ViewRepository.findOneLean(query);
 
     if (!isSelfViewed) {
@@ -139,7 +142,8 @@ export const getSelfNewsView = async (
         ...(guest?.token ? { guest: guest.token } : {}),
       });
       if (created) {
-        await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+        // Only this article's count changed; never touch the news caches.
+        await invalidateCache(countKey);
 
         // Update user activity stats and streak
         if (user?._id) {
@@ -157,13 +161,9 @@ export const getSelfNewsView = async (
     }
   }
 
-  const result = await withCache(
-    generateCacheKey(CACHE_PREFIX, ['news', news_id, 'count']),
-    60,
-    async () => {
-      return await ViewRepository.count({ news: news_id });
-    },
-  );
+  const result = await withCache(countKey, 60, async () => {
+    return await ViewRepository.count({ news: news_id });
+  });
 
   return { data: null, meta: { views: result } };
 };

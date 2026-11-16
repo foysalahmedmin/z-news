@@ -13,6 +13,9 @@ interface QueryParams {
 
 type DocumentType<T> = T & Document;
 
+export const DEFAULT_PAGE_LIMIT = 20;
+export const MAX_PAGE_LIMIT = 100;
+
 class AppQueryFind<T> {
   private model: Model<DocumentType<T>>;
   public query: Query<DocumentType<T>[], DocumentType<T>>;
@@ -20,32 +23,69 @@ class AppQueryFind<T> {
   public query_filter: FilterQuery<DocumentType<T>>;
 
   private page = 1;
-  private limit = 0;
+  private limit = DEFAULT_PAGE_LIMIT;
+
+  // Server-side conditions (owner, status, ...) that query params can never override.
+  private enforced_filter: Record<string, unknown>;
+  private user_filter: Record<string, unknown> = {};
+  private search_filter?: Record<string, unknown>;
 
   constructor(
     model: Model<DocumentType<T>>,
     query_params: Record<string, unknown>,
+    enforced_filter: Record<string, unknown> = {},
   ) {
     this.model = model;
     this.query = model.find();
     this.query_params = query_params;
+    this.enforced_filter = enforced_filter;
     this.query_filter = {};
+    this.applyFilter();
+  }
+
+  // Rebuilds the Mongo filter: user filters first, enforced ones last. All $or/$and clauses
+  // go into one top-level $and so search, user and enforced clauses can't replace each other.
+  private applyFilter(): void {
+    const { $or: userOr, $and: userAnd, ...userPlain } = this.user_filter;
+    const {
+      $or: enforcedOr,
+      $and: enforcedAnd,
+      ...enforcedPlain
+    } = this.enforced_filter;
+
+    const and = [
+      ...(this.search_filter ? [this.search_filter] : []),
+      ...(userOr ? [{ $or: userOr }] : []),
+      ...((userAnd as unknown[]) ?? []),
+      ...(enforcedOr ? [{ $or: enforcedOr }] : []),
+      ...((enforcedAnd as unknown[]) ?? []),
+    ];
+
+    this.query_filter = {
+      ...userPlain,
+      ...enforcedPlain,
+      ...(and.length ? { $and: and } : {}),
+    } as FilterQuery<DocumentType<T>>;
+    this.query.setQuery(this.query_filter);
   }
 
   search(applicableFields: (keyof T)[]): this {
     const searchValue = this.query_params.search;
     if (searchValue) {
-      const searchConditions: FilterQuery<DocumentType<T>> = {
+      this.search_filter = {
         $or: applicableFields.map((field) => ({
           [field]: { $regex: searchValue, $options: 'i' },
-        })) as FilterQuery<DocumentType<T>>[],
+        })),
       };
-      this.query_filter = { ...this.query_filter, ...searchConditions };
-      this.query = this.query.find(searchConditions);
+      this.applyFilter();
     }
     return this;
   }
 
+  /**
+   * Turns query params into Mongo filters. Pass `applicableFields` to allow only those
+   * params (an empty array allows none); public endpoints must always pass a list.
+   */
   filter(applicableFields?: (keyof T)[]): this {
     const queryObj = { ...this.query_params };
     const excludedFields = [
@@ -59,7 +99,7 @@ class AppQueryFind<T> {
     excludedFields.forEach((field) => delete queryObj[field]);
 
     // Normal filter
-    if (applicableFields?.length) {
+    if (applicableFields) {
       Object.keys(queryObj).forEach((key) => {
         if (!applicableFields.includes(key as keyof T)) {
           delete queryObj[key];
@@ -96,25 +136,24 @@ class AppQueryFind<T> {
     // Merge remaining normal filters
     Object.assign(mongoFilter, queryObj);
 
-    // Apply to query
-    this.query_filter = { ...this.query_filter, ...mongoFilter };
-    this.query = this.query.find(mongoFilter);
+    this.user_filter = mongoFilter;
+    this.applyFilter();
 
     return this;
   }
 
-  sort(applicableFields?: (keyof T)[]): this {
+  sort(applicableFields?: string[]): this {
     const rawSort = this.query_params.sort ?? '';
     let fields = rawSort.split(',').filter(Boolean);
 
     if (applicableFields?.length) {
       fields = fields.filter((field) => {
         const fieldName = field.startsWith('-') ? field.slice(1) : field;
-        return applicableFields.includes(fieldName as keyof T);
+        return applicableFields.includes(fieldName);
       });
     }
 
-    const sortOrder = fields.length > 0 ? fields.join(' ') : '-createdAt';
+    const sortOrder = fields.length > 0 ? fields.join(' ') : '-created_at';
     this.query = this.query.sort(sortOrder);
     return this;
   }
@@ -122,12 +161,14 @@ class AppQueryFind<T> {
   paginate(): this {
     const { page, limit } = this.query_params;
 
-    if (limit && page) {
-      this.page = Number(page) || 1;
-      this.limit = Number(limit) || 10;
-      const skip = (this.page - 1) * this.limit;
-      this.query = this.query.skip(skip).limit(this.limit);
-    }
+    // Always paginate: default 20, hard max 100 (page=0 is treated as page 1).
+    this.page = Math.max(1, Math.floor(Number(page)) || 1);
+    this.limit = Math.min(
+      MAX_PAGE_LIMIT,
+      Math.max(1, Math.floor(Number(limit)) || DEFAULT_PAGE_LIMIT),
+    );
+    const skip = (this.page - 1) * this.limit;
+    this.query = this.query.skip(skip).limit(this.limit);
 
     return this;
   }

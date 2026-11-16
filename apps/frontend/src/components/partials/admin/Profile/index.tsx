@@ -16,7 +16,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/Tabs";
-import { URLS } from "@/config";
 import useAlert from "@/hooks/ui/useAlert";
 import { changePassword } from "@/services/auth.service";
 import { fetchCategoriesTree } from "@/services/admin-category.service";
@@ -56,6 +55,7 @@ import { toast } from "react-toastify";
 import ProfileNewsDataTableSection from "./ProfileNewsDataTableSection";
 import ProfileNewsFilterSection from "./ProfileNewsFilterSection";
 import ProfileOverviewSection from "./ProfileOverviewSection";
+import { userImageUrl } from "@/utils/userImageUrl";
 
 // Ported from apps/adminpanel's src/pages/(user)/ProfilePage/index.tsx.
 // Shared between the two Next.js routes that render it:
@@ -326,7 +326,7 @@ const Profile = ({ isUserView }: { isUserView?: boolean }) => {
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
-    queryFn: () => fetchCategoriesTree({ sort: "sequence" }),
+    queryFn: () => fetchCategoriesTree({ sort: "sequence", limit: 100 }),
   });
 
   // Event handlers
@@ -439,9 +439,7 @@ const Profile = ({ isUserView }: { isUserView?: boolean }) => {
                   <div className="relative">
                     <img
                       src={
-                        user.image
-                          ? URLS.user + "/" + user.image
-                          : "/images/avatar.png"
+                        userImageUrl(user.image) || "/images/avatar.png"
                       }
                       alt={user.name}
                       className="border-border h-24 w-24 rounded-full border-4 object-cover"
@@ -500,7 +498,7 @@ const Profile = ({ isUserView }: { isUserView?: boolean }) => {
                       <img
                         src={
                           previewImage ||
-                          (user.image && URLS.user + "/" + user.image) ||
+                          userImageUrl(user.image) ||
                           "/images/avatar.png"
                         }
                         alt={user.name}

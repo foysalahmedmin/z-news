@@ -1,7 +1,7 @@
 import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
-import jwt from 'jsonwebtoken';
 import { Server as IOServer, Socket } from 'socket.io';
+import { authenticate } from '../middlewares/auth.middleware';
 import config from './env';
 import { pubClient, subClient } from './redis';
 import { TJwtPayload } from '../types/jsonwebtoken.type';
@@ -60,7 +60,8 @@ const setupRedisAdapter = async (): Promise<void> => {
       return;
     }
 
-    if (pubClient && subClient && pubClient.isOpen && subClient.isOpen) {
+    // isReady, not isOpen: a client still reconnecting would reject the adapter's commands.
+    if (pubClient.isReady && subClient.isReady) {
       io.adapter(createAdapter(pubClient, subClient));
       console.log('✅ Socket.io Redis adapter enabled (clustering support)');
     } else {
@@ -77,29 +78,19 @@ const setupRedisAdapter = async (): Promise<void> => {
   }
 };
 
-// Setup authentication middleware
+// Setup authentication middleware: the handshake token (auth.token or Authorization
+// header) is verified like an HTTP request; invalid tokens are rejected, no token = anonymous.
 const setupAuthMiddleware = (): void => {
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
+    const token =
+      socket.handshake.auth?.token || socket.handshake.headers.authorization;
+    if (!token) return next();
+
     try {
-      const token = socket.handshake.auth?.token;
-
-      if (token) {
-        const decoded = verifyToken(token);
-        if (decoded) {
-          socket.data.user = decoded;
-          console.log(
-            `🔐 Authenticated socket connection: ${socket.id} (User: ${decoded._id})`,
-          );
-        } else {
-          console.log(`🔒 Invalid token for socket: ${socket.id}`);
-        }
-      } else {
-        console.log(`🟡 Guest connection: ${socket.id}`);
-      }
-
+      const { decoded, user } = await authenticate(token);
+      socket.data.user = { ...decoded, role: user.role };
       next();
-    } catch (error) {
-      console.error('❌ Socket authentication error:', error);
+    } catch (_error) {
       next(new Error('Authentication failed'));
     }
   });
@@ -144,29 +135,34 @@ const handleConnection = (socket: Socket): void => {
   });
 };
 
+// Rooms a socket may join: only its own user and role rooms.
+const canJoin = (socket: Socket, roomId: string): boolean => {
+  const user = socket.data.user as TJwtPayload | undefined;
+  return (
+    !!user?._id &&
+    (roomId === `user:${user._id}` || roomId === `role:${user.role}`)
+  );
+};
+
 // Setup custom socket event handlers
 const setupSocketEvents = (socket: Socket): void => {
-  // Example: Join custom room
   socket.on('join-room', (roomId: string) => {
-    if (typeof roomId === 'string' && roomId.length > 0) {
+    if (typeof roomId === 'string' && canJoin(socket, roomId)) {
       socket.join(roomId);
       socket.emit('room-joined', roomId);
-      console.log(`📡 Socket ${socket.id} joined room: ${roomId}`);
     }
   });
 
-  // Example: Leave custom room
   socket.on('leave-room', (roomId: string) => {
     if (typeof roomId === 'string') {
       socket.leave(roomId);
       socket.emit('room-left', roomId);
-      console.log(`📡 Socket ${socket.id} left room: ${roomId}`);
     }
   });
 
-  // Example: Send message to room
+  // Only to rooms this socket is in, so nobody can push messages into other users' rooms.
   socket.on('room-message', (data: { roomId: string; message: string }) => {
-    if (data.roomId && data.message) {
+    if (data?.roomId && data.message && socket.rooms.has(data.roomId)) {
       socket.to(data.roomId).emit('room-message', {
         from: socket.id,
         message: data.message,
@@ -174,23 +170,6 @@ const setupSocketEvents = (socket: Socket): void => {
       });
     }
   });
-};
-
-// JWT token verification
-const verifyToken = (token: string): TJwtPayload | null => {
-  try {
-    if (!token || !config.jwt_access_secret) {
-      return null;
-    }
-
-    return jwt.verify(token, config.jwt_access_secret) as TJwtPayload;
-  } catch (error) {
-    console.warn(
-      '⚠️ JWT verification failed:',
-      error instanceof Error ? error.message : 'Invalid token',
-    );
-    return null;
-  }
 };
 
 // Utility functions for emitting events

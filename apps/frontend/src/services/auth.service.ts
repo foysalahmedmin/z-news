@@ -10,7 +10,9 @@ import type {
 
 // POST - Sign In
 export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
+  // credentials: the API answers with the httpOnly refresh_token cookie.
   const response = await api.post("/api/auth/signin", payload, {
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
   });
   return response.data as AuthResponse;
@@ -25,6 +27,7 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResponse> {
   if (payload.image) formData.append("image", payload.image);
 
   const response = await api.post("/api/auth/signup", formData, {
+    credentials: "include",
     headers: { "Content-Type": "multipart/form-data" },
   });
 
@@ -34,6 +37,7 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResponse> {
 // POST - Sign Out
 export async function signOut(): Promise<AuthResponse> {
   const response = await api.post("/api/auth/logout", null, {
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
   });
   return response.data as AuthResponse;
@@ -44,7 +48,7 @@ export async function googleSignIn(id_token: string): Promise<AuthResponse> {
   const response = await api.post(
     "/api/auth/google-login",
     { id_token },
-    { headers: { "Content-Type": "application/json" } },
+    { credentials: "include", headers: { "Content-Type": "application/json" } },
   );
   return response.data as AuthResponse;
 }
@@ -52,7 +56,7 @@ export async function googleSignIn(id_token: string): Promise<AuthResponse> {
 // POST - Refresh Token
 export async function refreshToken(): Promise<AuthResponse> {
   const response = await api.post("/api/auth/refresh-token", null, {
-    // withCredentials: true,
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
   });
   return response.data as AuthResponse;

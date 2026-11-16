@@ -4,6 +4,9 @@ import {
   TNewsBreakResponse,
 } from "@/types/news-break.type";
 
+// 5 min + on-demand expiry (app/api/revalidate). Items embed their news.
+const BREAK_CACHE = { revalidate: 300, tags: ["breaks", "news"] };
+
 export const fetchNewsBreak = async (
   id: string,
   query?: Record<string, any>,
@@ -14,10 +17,7 @@ export const fetchNewsBreak = async (
 
   const url = `${ENV.api_url}/api/news-break/${id}/public${queryString}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    next: { revalidate: 60 * 0.5 },
-  });
+  const response = await fetch(url, { method: "GET", next: BREAK_CACHE });
 
   if (!response.ok) {
     throw new Error("Failed to fetch news break");
@@ -35,10 +35,7 @@ export const fetchBulkNewsBreaks = async (
 
   const url = `${ENV.api_url}/api/news-break/public${queryString}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    next: { revalidate: 60 * 0.25 },
-  });
+  const response = await fetch(url, { method: "GET", next: BREAK_CACHE });
 
   if (!response.ok) {
     return {

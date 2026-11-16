@@ -1,6 +1,6 @@
 import { ENV } from "@/config";
 import type { TUserState } from "@/types/state.type";
-import { getCookie } from "cookies-next";
+import { getCookie } from "cookies-next/client";
 
 // types.ts (separate file for interfaces)
 export interface FetchConfig {
@@ -88,6 +88,11 @@ export class Fetch {
       ...this.defaultHeaders,
       ...this.convertHeaders(config.options.headers),
     };
+
+    // FormData needs the browser-generated multipart boundary, so never send our own Content-Type.
+    if (config.options.body instanceof FormData) {
+      delete (mergedHeaders as Record<string, string>)["Content-Type"];
+    }
 
     let processedConfig: RequestConfig = {
       ...config,
@@ -213,7 +218,7 @@ export class Fetch {
     return this.request<T>(url, {
       ...options,
       method: "POST",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 
@@ -225,7 +230,7 @@ export class Fetch {
     return this.request<T>(url, {
       ...options,
       method: "PUT",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 
@@ -237,7 +242,7 @@ export class Fetch {
     return this.request<T>(url, {
       ...options,
       method: "PATCH",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 
@@ -249,31 +254,44 @@ export class Fetch {
   }
 }
 
+export const USER_COOKIE_KEY = "user";
+
+// Matches the backend's refresh-token lifetime (JWT_REFRESH_SECRET_EXPIRES_IN=15d
+// in apps/backend/.env.example): once the refresh token is gone the access
+// token in this cookie can no longer be renewed, so keeping it longer is useless.
+const USER_COOKIE_MAX_AGE = 60 * 60 * 24 * 15;
+
+// Options for the JS-written "user" cookie (it can't be httpOnly because the
+// client reads the token from it).
+export const getUserCookieOptions = () => ({
+  path: "/",
+  maxAge: USER_COOKIE_MAX_AGE,
+  sameSite: "lax" as const,
+  secure: typeof window !== "undefined" && window.location.protocol === "https:",
+});
+
+// Authorization header for the signed-in user, read from the "user" cookie
+// that useUser.tsx writes. Client-side only: on the server the root/client
+// getCookie has no request context and returns undefined, so server renders
+// (SSR/RSC/ISR) are always anonymous. Reading it there would need next/headers'
+// cookies(), which would turn every public page using this into a dynamic page.
+export const getAuthHeaders = (): Record<string, string> => {
+  const cookie = getCookie(USER_COOKIE_KEY);
+  try {
+    const user = cookie ? (JSON.parse(cookie) as TUserState) : null;
+    return user?.token ? { Authorization: user.token } : {};
+  } catch {
+    return {};
+  }
+};
+
 const api = new Fetch({ baseURL: ENV.api_url });
 
-// Attaches the signed-in user's access token to every request, in both
-// Server Components (SSR/RSC — cookies-next's isomorphic getCookie reads via
-// next/headers there) and Client Components (reads document.cookie) — the
-// same "user" cookie apps/frontend/src/hooks/states/useUser.tsx already
-// writes on sign-in. Public/anonymous requests simply have no cookie, so no
-// header gets added; the backend treats those as unauthenticated as before.
-api.interceptors.request.use(async (config) => {
-  const cookie = await getCookie("user");
-  let user: TUserState | null = null;
-
-  try {
-    user = cookie ? (JSON.parse(cookie) as TUserState) : null;
-  } catch {
-    user = null;
-  }
-
-  if (user?.token) {
-    config.options.headers = {
-      ...config.options.headers,
-      Authorization: user.token,
-    };
-  }
-
+api.interceptors.request.use((config) => {
+  config.options.headers = {
+    ...config.options.headers,
+    ...getAuthHeaders(),
+  };
   return config;
 });
 

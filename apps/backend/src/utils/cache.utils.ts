@@ -1,13 +1,8 @@
 /* eslint-disable no-console */
 import config from '../config/env';
 import { cacheClient } from '../config/redis';
+import { revalidateFrontend } from './revalidate-frontend';
 
-/**
- * Higher-order function to wrap a function with caching logic.
- * @param key The Redis key to use for caching.
- * @param ttl Time-to-live in seconds.
- * @param fn The function to execute if cache misses.
- */
 export const generateCacheKey = (prefix: string, parts: unknown[]): string => {
   const processPart = (part: unknown): string => {
     if (part === null || part === undefined) return '';
@@ -28,6 +23,24 @@ export const generateCacheKey = (prefix: string, parts: unknown[]): string => {
   return `${prefix}:${parts.map(processPart).join(':')}`;
 };
 
+// Every namespace (the key prefix before the first ':') has a version counter stored at
+// `<ns>:ver`. Cached values live at `<ns>:v<N>:<rest>`, so invalidating a namespace is a
+// single INCR and the orphaned keys simply expire by TTL (no SCAN on hot paths).
+const namespaceOf = (key: string): string => key.split(':')[0];
+
+const versionedKey = async (key: string): Promise<string> => {
+  const ns = namespaceOf(key);
+  const version = (await cacheClient.get(`${ns}:ver`)) ?? '0';
+  return `${ns}:v${version}${key.slice(ns.length)}`;
+};
+
+// Concurrent misses on the same key in this process share one source call.
+const inFlight = new Map<string, Promise<unknown>>();
+
+/**
+ * Read-through cache. Redis errors fall back to `fn` (fail-open); errors thrown by `fn`
+ * itself (e.g. a 404 AppError) propagate unchanged and are never retried.
+ */
 export const withCache = async <T>(
   key: string,
   ttl: number,
@@ -37,24 +50,35 @@ export const withCache = async <T>(
     return await fn();
   }
 
+  let fullKey: string;
   try {
-    const cachedData = await cacheClient.get(key);
+    fullKey = await versionedKey(key);
+    const cachedData = await cacheClient.get(fullKey);
     if (cachedData) {
-      console.log(`✅ [Redis Cache] HIT - Key: ${key}`);
-      return JSON.parse(cachedData);
+      return JSON.parse(cachedData) as T;
     }
-
-    console.log(`❌ [Redis Cache] MISS - Key: ${key}. Fetching from DB...`);
-    const result = await fn();
-    if (result !== undefined && result !== null) {
-      await cacheClient.set(key, JSON.stringify(result), { EX: ttl });
-      console.log(`💾 [Redis Cache] SAVED - Key: ${key} (TTL: ${ttl}s)`);
-    }
-    return result;
   } catch (error) {
-    console.warn(`Cache error for key ${key}:`, error);
+    console.warn(`Cache read failed for key ${key}, using source:`, error);
     return await fn();
   }
+
+  const pending = inFlight.get(fullKey);
+  if (pending) return pending as Promise<T>;
+
+  const promise = (async () => {
+    const result = await fn();
+    if (result !== undefined && result !== null) {
+      cacheClient
+        .set(fullKey, JSON.stringify(result), { EX: ttl })
+        .catch((error) =>
+          console.warn(`Cache write failed for key ${key}:`, error),
+        );
+    }
+    return result;
+  })().finally(() => inFlight.delete(fullKey));
+
+  inFlight.set(fullKey, promise);
+  return promise;
 };
 
 export const setCache = async (
@@ -81,7 +105,7 @@ export const getCache = async (key: string): Promise<string | null> => {
 };
 
 /**
- * Invalidate a specific cache key or multiple keys.
+ * Invalidate specific keys previously cached with `withCache`.
  * @param keys Key or array of keys to invalidate.
  */
 export const invalidateCache = async (keys: string | string[]) => {
@@ -90,7 +114,7 @@ export const invalidateCache = async (keys: string | string[]) => {
   try {
     const keysArray = Array.isArray(keys) ? keys : [keys];
     if (keysArray.length > 0) {
-      await cacheClient.del(keysArray);
+      await cacheClient.del(await Promise.all(keysArray.map(versionedKey)));
     }
   } catch (error) {
     console.warn(`Invalidate cache error:`, error);
@@ -98,27 +122,23 @@ export const invalidateCache = async (keys: string | string[]) => {
 };
 
 /**
- * Invalidate cache keys matching a pattern.
- * Note: Use with caution as KEYS/SCAN can be expensive on large datasets.
- * @param pattern The pattern to match (e.g., 'package:*')
+ * Invalidate whole cache namespaces in O(1) and tell the frontend to revalidate
+ * the matching pages (news, headlines, breaks, categories, events).
  */
-export const invalidateCacheByPattern = async (pattern: string) => {
-  if (!config.redis_enabled) return;
-
-  try {
-    // Using SCAN instead of KEYS for better performance and to avoid blocking
-    let cursor = '0';
-    do {
-      const reply = await cacheClient.scan(cursor, {
-        MATCH: pattern,
-        COUNT: 100,
-      });
-      cursor = reply.cursor.toString();
-      if (reply.keys.length > 0) {
-        await cacheClient.del(reply.keys);
-      }
-    } while (cursor !== '0');
-  } catch (error) {
-    console.warn(`Invalidate pattern cache error:`, error);
+export const invalidateNamespaces = async (...namespaces: string[]) => {
+  if (config.redis_enabled) {
+    try {
+      await Promise.all(namespaces.map((ns) => cacheClient.incr(`${ns}:ver`)));
+    } catch (error) {
+      console.warn(`Invalidate namespace error:`, error);
+    }
   }
+  revalidateFrontend(namespaces);
 };
+
+/**
+ * Kept for existing callers: invalidates the pattern's whole namespace
+ * (`user:admin:list:*` invalidates every `user:*` key).
+ */
+export const invalidateCacheByPattern = async (pattern: string) =>
+  invalidateNamespaces(namespaceOf(pattern));

@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { USER_COOKIE_KEY as COOKIE_KEY, getUserCookieOptions } from "@/lib/api";
 import { refreshToken } from "@/services/auth.service";
 import type { TUserState } from "@/types/state.type";
 import type {
@@ -9,9 +10,7 @@ import type {
 } from "axios";
 import axios from "axios";
 import { deleteCookie, getCookie, setCookie } from "cookies-next";
-
-const COOKIE_KEY = "user";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+import { toast } from "react-toastify";
 
 let isRefreshing = false;
 
@@ -33,10 +32,14 @@ const processQueue = (error: unknown, token: string | null) => {
   failedQueue = [];
 };
 
+// Only reached when the session can't be renewed. A hard navigation is
+// intentional (it resets all client state); NewsArticleForm guards unsaved
+// edits with a beforeunload prompt, and the user comes back to this page.
 const redirectToSignIn = () => {
   deleteCookie(COOKIE_KEY);
   if (typeof window !== "undefined") {
-    window.location.href = "/auth/sign-in";
+    const back = window.location.pathname + window.location.search;
+    window.location.href = `/auth/sign-in?redirect=${encodeURIComponent(back)}`;
   }
 };
 
@@ -68,19 +71,18 @@ adminApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 adminApi.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError): Promise<AxiosResponse | never> => {
+    // 403 = signed in but the role may not do this; the session is fine.
     if (error.response?.status === 403) {
-      redirectToSignIn();
+      toast.error(
+        (error.response.data as { message?: string })?.message ||
+          "Access denied",
+      );
       return Promise.reject(error);
     }
 
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
-
-    if (originalRequest.url === "/api/auth/refresh-token") {
-      redirectToSignIn();
-      return Promise.reject(error);
-    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -113,7 +115,7 @@ adminApi.interceptors.response.use(
         setCookie(
           COOKIE_KEY,
           JSON.stringify({ ...existingUser, ...data, isAuthenticated: true }),
-          { path: "/", maxAge: COOKIE_MAX_AGE },
+          getUserCookieOptions(),
         );
 
         adminApi.defaults.headers.common.Authorization = `${data.token}`;

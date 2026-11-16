@@ -33,6 +33,7 @@ router.get(
 );
 router.get('/', auth('admin'), ViewControllers.getViews);
 
+// Read-only: view count for the article.
 router.get(
   '/news/:news_id/self',
   guest('optional'),
@@ -120,6 +121,23 @@ router.delete(
 );
 
 // POST
+// Records a view once per user/guest (same handler as the GET above, which never writes).
+router.post(
+  '/news/:news_id/self',
+  guest('optional'),
+  auth(
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+    'guest',
+  ),
+  validation(ViewValidations.newsViewOperationValidationSchema),
+  ViewControllers.getSelfNewsView,
+);
+
 router.post(
   '/',
   guest('optional'),

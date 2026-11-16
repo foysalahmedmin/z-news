@@ -89,9 +89,8 @@ export const getSelfNotificationRecipients = async (
     query,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const notificationQuery = new AppQueryFind(NotificationRecipient, {
+    const notificationQuery = new AppQueryFind(NotificationRecipient, query, {
       recipient: user._id,
-      ...query,
     })
       .populate([
         { path: 'recipient', select: '_id name email image' },

@@ -84,7 +84,7 @@ export const findPaginated = async (
   data: TGuest[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const guestQuery = new AppQueryFind(Guest, { ...filter, ...query })
+  const guestQuery = new AppQueryFind(Guest, query, filter)
     .search(['name', 'email'])
     .filter()
     .sort()

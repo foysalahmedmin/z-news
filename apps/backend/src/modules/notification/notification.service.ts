@@ -81,7 +81,7 @@ export const sendNewsNotification = async (payload: {
         await NotificationRepository.create(notificationPayload);
 
       const admins = await User.find({
-        role: 'admin',
+        role: { $in: ['super-admin', 'admin'] },
       });
 
       const recipients = admins.map((admin) => ({
@@ -136,11 +136,11 @@ export const sendNewsNotification = async (payload: {
         }
       }
     }
-    if (type === 'news-request-response' && news && sender) {
+    if (type === 'news-request-approval' && news && sender) {
       const notificationPayload: TNotification = {
         title: 'New News Request Response',
         message: `${sender?.name || 'Admin'} has ${news.status} your news request: "${news.title}"`,
-        type: 'news-request-response',
+        type: 'news-request-approval',
         priority: 'medium',
         channels: ['web', 'push'],
         sender: sender?._id.toString(),

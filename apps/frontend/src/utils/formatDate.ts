@@ -1,10 +1,26 @@
+import { SETTINGS } from "@/config";
 import { toBanglaNumber } from "./toBanglaNumber";
 
-export const formatDate = (date: Date | string, type = "relative") => {
+// Always format in the site's timezone; server renders otherwise use the
+// server's (UTC) clock and show the wrong day/hour for Dhaka readers.
+const format = (date: Date | string, options: Intl.DateTimeFormatOptions) =>
+  new Date(date).toLocaleString("bn-BD", {
+    timeZone: SETTINGS.timezone,
+    ...options,
+  });
+
+export const formatDate = (
+  date: Date | string | undefined,
+  type: "relative" | "datetime" | "date" = "relative",
+) => {
   if (!date) return "";
 
+  if (type === "date") {
+    return format(date, { year: "numeric", month: "long", day: "numeric" });
+  }
+
   if (type !== "relative") {
-    return new Date(date).toLocaleString("bn-BD", {
+    return format(date, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -24,7 +40,7 @@ export const formatDate = (date: Date | string, type = "relative") => {
   } else if (diffInHours < 24) {
     return `${toBanglaNumber(Math.floor(diffInHours))} ঘন্টা আগে`;
   } else {
-    return commentDate.toLocaleDateString("bn-BD", {
+    return format(commentDate, {
       day: "numeric",
       month: "short",
       year: "numeric",

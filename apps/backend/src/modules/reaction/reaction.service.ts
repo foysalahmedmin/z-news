@@ -40,14 +40,13 @@ export const createReaction = async (
   const update: Partial<TReaction> = {
     ...payload,
     ...(user?._id ? { user: user._id as unknown as Types.ObjectId } : {}),
-    ...(guest?.token ? { guest: guest.token } : {}),
+    // A logged-in user's reaction is theirs alone; also tagging an old guest cookie would collide with that guest's earlier reaction.
+    ...(!user?._id && guest?.token ? { guest: guest.token } : {}),
   };
 
   const result = await ReactionRepository.create(update);
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-    // Also invalidate news cache because reaction counts might be cached there or used by news
-    await invalidateCacheByPattern(`news:*`);
 
     // Update user activity stats
     if (user?._id) {
@@ -210,7 +209,6 @@ export const updateSelfReaction = async (
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-    await invalidateCacheByPattern(`news:*`);
   }
 
   return result!;
@@ -229,7 +227,6 @@ export const updateReaction = async (
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-    await invalidateCacheByPattern(`news:*`);
   }
 
   return result!;
@@ -313,7 +310,6 @@ export const deleteSelfReaction = async (
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-    await invalidateCacheByPattern(`news:*`);
   }
 };
 
@@ -325,7 +321,6 @@ export const deleteReaction = async (id: string): Promise<void> => {
 
   await ReactionRepository.deleteById(id);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  await invalidateCacheByPattern(`news:*`);
 };
 
 export const deleteSelfReactions = async (

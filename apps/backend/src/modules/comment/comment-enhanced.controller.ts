@@ -9,13 +9,17 @@ import { EnhancedCommentService } from './comment-enhanced.service';
 const getThreadedComments = catchAsync(async (req, res) => {
   const { news_id } = req.params;
 
-  const comments = await EnhancedCommentService.getThreadedComments(news_id);
+  const result = await EnhancedCommentService.getThreadedComments(news_id, {
+    userId: req.user?._id,
+    guestToken: req.guest?.token,
+  });
 
   sendResponse(res, {
     success: true,
     status: httpStatus.OK,
     message: 'Threaded comments retrieved successfully',
-    data: comments,
+    data: result.data,
+    meta: { total: result.total },
   });
 });
 

@@ -13,7 +13,7 @@ import httpStatus from 'http-status';
 jest.mock('../category.repository');
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
-  invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
+  invalidateNamespaces: jest.fn().mockResolvedValue(undefined),
   generateCacheKey: jest.fn(
     (_prefix: string, parts: unknown[]) => `mock:${parts.join(':')}`,
   ),
@@ -53,14 +53,15 @@ describe('CategoryService.createCategory', () => {
   });
 
   it('should invalidate cache after creation', async () => {
-    const { invalidateCacheByPattern } = jest.requireMock(
+    const { invalidateNamespaces } = jest.requireMock(
       '../../../utils/cache.utils',
     );
     (CategoryRepository.create as jest.Mock).mockResolvedValue(mockCategory());
 
     await CategoryService.createCategory(mockCategory());
 
-    expect(invalidateCacheByPattern).toHaveBeenCalledWith('category:*');
+    // Category names are embedded in cached news, so news is invalidated too.
+    expect(invalidateNamespaces).toHaveBeenCalledWith('category', 'news');
   });
 });
 

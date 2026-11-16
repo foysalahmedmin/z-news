@@ -79,9 +79,6 @@ const NotificationsList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
-      queryClient.invalidateQueries({
-        queryKey: ["notifications-unread-count"],
-      });
     },
   });
 
@@ -90,9 +87,6 @@ const NotificationsList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
-      queryClient.invalidateQueries({
-        queryKey: ["notifications-unread-count"],
-      });
     },
   });
 
@@ -101,9 +95,6 @@ const NotificationsList: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
-      queryClient.invalidateQueries({
-        queryKey: ["notifications-unread-count"],
-      });
     },
   });
 

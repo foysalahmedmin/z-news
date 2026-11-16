@@ -4,7 +4,7 @@
  * Handles ALL direct database interactions for the Poll module.
  */
 
-import { PopulateOptions } from 'mongoose';
+import { PopulateOptions, UpdateQuery } from 'mongoose';
 import AppQueryFind from '../../builder/app-query-find';
 import { Poll } from './poll.model';
 import { TPoll, TPollDocument } from './poll.type';
@@ -63,8 +63,9 @@ export const findPaginated = (
   query: Record<string, unknown>,
   filterOverride: Record<string, unknown> = {},
 ) => {
-  return new AppQueryFind(Poll, { ...query, ...filterOverride })
-    .filter()
+  // Only used by the public poll list; every filter is built by the service.
+  return new AppQueryFind(Poll, query, filterOverride)
+    .filter([])
     .sort()
     .paginate()
     .fields()
@@ -81,6 +82,13 @@ export const findByIdAndUpdate = async (
     new: true,
     runValidators: true,
   });
+};
+
+export const recordVote = async (
+  filter: Record<string, unknown>,
+  update: UpdateQuery<TPollDocument>,
+): Promise<TPollDocument | null> => {
+  return await Poll.findOneAndUpdate(filter, update, { new: true });
 };
 
 export const save = async (doc: TPollDocument): Promise<TPollDocument> => {

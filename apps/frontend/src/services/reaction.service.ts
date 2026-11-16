@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getAuthHeaders } from "@/lib/api";
 import { TReactionResponse, TReactionsResponse } from "@/types/reaction.type";
 
 export const fetchReactions = async (
@@ -14,6 +15,7 @@ export const fetchReactions = async (
     method: "GET",
     cache: "no-cache",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -45,6 +47,7 @@ export const fetchNewsReaction = async (
     method: "GET",
     cache: "no-cache",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -60,6 +63,7 @@ export const createReaction = async (payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -73,6 +77,7 @@ export const updateReaction = async (_id: string, payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -85,6 +90,7 @@ export const deleteReaction = async (_id: string) => {
   const response = await fetch(url, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return response.json() as Promise<TReactionResponse>;
 };

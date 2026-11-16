@@ -12,6 +12,10 @@ export type TNewsCardProps = {
   classNameThumbnailImage?: string;
   classNameTitle?: string;
   classNameDescription?: string;
+  /** next/image `sizes`; each card type has a default for its usual grid. */
+  sizes?: string;
+  /** Preload the thumbnail (only for the page's LCP image). */
+  preload?: boolean;
 };
 
 const NewsCard: React.FC<TNewsCardProps> = ({ type, ...props }) => {

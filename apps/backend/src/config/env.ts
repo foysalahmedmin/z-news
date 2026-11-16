@@ -73,6 +73,11 @@ const config = {
   // 🌍 Frontend Configuration
   adminpanel_url: process.env.ADMINPANEL_URL as string,
   website_url: process.env.WEBSITE_URL as string,
+  // Shared with the frontend's /api/revalidate route (x-revalidate-secret header).
+  revalidate_secret: process.env.REVALIDATE_SECRET as string,
+
+  // ⏰ Scheduler endpoint secret (Vercel cron sends `Authorization: Bearer <CRON_SECRET>`)
+  cron_secret: process.env.CRON_SECRET as string,
 
   // 🔗 UI Links Configuration
   reset_password_ui_link: process.env.RESET_PASSWORD_UI_LINK as string,

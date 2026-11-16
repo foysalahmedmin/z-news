@@ -29,6 +29,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import { ICON_NAMES } from "@/components/ui/Icon";
 
 // Ported from apps/adminpanel's `components/modals/CategoryEditModal`.
 // Compound `Modal.X` / `FormControl.X` dot-notation swapped for the flat
@@ -148,11 +149,17 @@ const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 <FormControlLabel>Icon (Optional)</FormControlLabel>
                 <FormControl
                   type="text"
-                  placeholder="e.g. Home, Settings"
+                  placeholder="e.g. blocks, newspaper"
+                  list="icon-names"
                   {...register("icon")}
                 />
+                <datalist id="icon-names">
+                  {ICON_NAMES.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
                 <FormControlHelper>
-                  Enter a Lucide icon name (optional).
+                  Optional. Pick one of the suggested icon names; others won&apos;t display.
                 </FormControlHelper>
               </div>
 

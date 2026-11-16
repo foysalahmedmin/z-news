@@ -15,6 +15,24 @@ import { TComment } from './comment.type';
 const CACHE_PREFIX = 'comment';
 const CACHE_TTL = 600; // 10 minutes
 
+// Public projection: never `guest` (the guest's session token) or the commenter's `email`.
+const PUBLIC_COMMENT_FIELDS: (keyof TComment)[] = [
+  'news',
+  'parent_comment',
+  'reply_to_user',
+  'thread_level',
+  'user',
+  'name',
+  'content',
+  'mentions',
+  'is_pinned',
+  'is_edited',
+  'edited_at',
+  'status',
+  'created_at',
+  'updated_at',
+];
+
 export const createComment = async (
   user: TJwtPayload,
   guest: TGuest,
@@ -113,9 +131,11 @@ export const getPublicComments = async (
       { status: 'approved' },
       query,
       [
-        { path: 'user', select: '_id name email image' },
+        { path: 'user', select: '_id name image' },
         { path: 'news', select: '_id slug title thumbnail' },
       ],
+      ['news', 'parent_comment', 'user'],
+      PUBLIC_COMMENT_FIELDS,
     );
     return result;
   });

@@ -20,7 +20,7 @@ export const createMedia = async (
 export const getMedia = async (id: string): Promise<TMedia> => {
   const result = await MediaRepository.findOneLean({ _id: id }, [
     { path: 'file', select: '_id url name filename mimetype size' },
-    { path: 'uploaded_by', select: '_id name email image' },
+    { path: 'uploaded_by', select: '_id name image' },
   ]);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Media not found');
@@ -31,7 +31,7 @@ export const getMedia = async (id: string): Promise<TMedia> => {
 export const getBulkMedia = async (query: Record<string, unknown>) => {
   return await MediaRepository.findPaginated(query, [
     { path: 'file', select: '_id url name filename mimetype size' },
-    { path: 'uploaded_by', select: '_id name email image' },
+    { path: 'uploaded_by', select: '_id name image' },
   ]);
 };
 

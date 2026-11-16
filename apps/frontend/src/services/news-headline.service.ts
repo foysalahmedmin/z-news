@@ -4,6 +4,9 @@ import {
   TNewsHeadlineResponse,
 } from "@/types/news-headline.type";
 
+// 5 min + on-demand expiry (app/api/revalidate). Items embed their news.
+const HEADLINE_CACHE = { revalidate: 300, tags: ["headlines", "news"] };
+
 export const fetchNewsHeadline = async (
   id: string,
   query?: Record<string, any>,
@@ -14,10 +17,7 @@ export const fetchNewsHeadline = async (
 
   const url = `${ENV.api_url}/api/news-headline/${id}/public${queryString}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    next: { revalidate: 60 * 0.5 },
-  });
+  const response = await fetch(url, { method: "GET", next: HEADLINE_CACHE });
 
   if (!response.ok) {
     throw new Error("Failed to fetch news headline");
@@ -35,10 +35,7 @@ export const fetchBulkNewsHeadlines = async (
 
   const url = `${ENV.api_url}/api/news-headline/public${queryString}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    next: { revalidate: 60 * 0.25 },
-  });
+  const response = await fetch(url, { method: "GET", next: HEADLINE_CACHE });
 
   if (!response.ok) {
     return {

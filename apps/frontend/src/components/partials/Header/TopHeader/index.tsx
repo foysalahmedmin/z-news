@@ -12,6 +12,7 @@ import { TCategory } from "@/types/category.type";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
+import TodayDate from "@/components/ui/TodayDate";
 
 type HeaderProps = {
   className?: string;
@@ -33,14 +34,7 @@ const TopHeader: React.FC<HeaderProps> = ({ className, categories }) => {
                 onClick={() => setIsMenuOpen(true)}
               />
               <div className="hidden md:block">
-                <span>
-                  {new Date().toLocaleString("bn-BD", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
+                <TodayDate />
               </div>
             </div>
             <div className="">

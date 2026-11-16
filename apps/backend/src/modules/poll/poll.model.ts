@@ -210,6 +210,7 @@ pollSchema.virtual('results').get(function () {
 pollSchema.methods.toJSON = function () {
   const poll = this.toObject();
   delete poll.is_deleted;
+  delete poll.votes; // voter user ids / guest ids
 
   // Hide voter details unless admin
   if (poll.options) {
@@ -256,7 +257,7 @@ pollSchema.statics.getActivePolls = async function () {
     $or: [{ end_date: null }, { end_date: { $gte: now } }],
   })
     .sort({ created_at: -1 })
-    .populate('created_by', 'name email')
+    .populate('created_by', 'name')
     .populate('category', 'name')
     .exec();
 };
@@ -271,7 +272,7 @@ pollSchema.statics.getFeaturedPolls = async function (limit: number = 5) {
   })
     .sort({ created_at: -1 })
     .limit(limit)
-    .populate('created_by', 'name email')
+    .populate('created_by', 'name')
     .populate('category', 'name')
     .exec();
 };

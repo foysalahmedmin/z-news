@@ -42,14 +42,16 @@ export const findManyByIds = async (ids: string[]): Promise<TNewsBreak[]> => {
 export const findPaginated = async (
   query: Record<string, unknown>,
   filterOverride: Record<string, unknown> = {},
+  isPublic = false,
 ): Promise<{
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const NewsQuery = new AppQueryFind(NewsBreak, { ...query, ...filterOverride })
+  const NewsQuery = new AppQueryFind(NewsBreak, query, filterOverride)
     .populate([{ path: 'news', select: '_id title slug' }])
-    .filter()
-    .sort()
+    // Public lists only accept these filter/sort params.
+    .filter(isPublic ? ['news'] : undefined)
+    .sort(isPublic ? ['published_at', 'created_at'] : undefined)
     .paginate()
     .fields()
     .tap((q) => q.lean());

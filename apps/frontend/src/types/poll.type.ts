@@ -118,12 +118,9 @@ export type TUpdatePollPayload = {
   is_featured?: boolean;
 };
 
+// Voter identity comes from the Authorization header or the guest cookie.
 export type TVotePollPayload = {
   option_indices: number[];
-  // Required for anonymous votes -- the vote endpoint does NOT derive guest
-  // identity from the `guest_token` cookie/req.guest server-side (unlike
-  // reaction/view/comment), it only reads `guest_id` from the request body.
-  guest_id?: string;
 };
 
 export type TPollResponse = Response<TPoll>;

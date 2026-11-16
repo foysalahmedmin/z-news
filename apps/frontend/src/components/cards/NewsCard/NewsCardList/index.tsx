@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TNews } from "@/types/news.type";
+import { formatDate } from "@/utils/formatDate";
 import { getDescription } from "@/utils/parseContentToDescription";
 import { parseYouTubeUrl } from "@/utils/youtubeUrlUtils";
 import { CheckCircle, Dot, Play } from "lucide-react";
@@ -14,6 +15,8 @@ export type TNewsCardListProps = {
   classNameContent?: string;
   classNameTitle?: string;
   classNameDescription?: string;
+  sizes?: string;
+  preload?: boolean;
 };
 
 const NewsCardList: React.FC<TNewsCardListProps> = ({
@@ -24,6 +27,8 @@ const NewsCardList: React.FC<TNewsCardListProps> = ({
   classNameContent,
   classNameTitle,
   classNameDescription,
+  sizes = "(min-width: 768px) 33vw, 100vw",
+  preload,
 }) => {
   const { published_at, slug, title, sub_title, description, category } =
     news || {};
@@ -34,13 +39,7 @@ const NewsCardList: React.FC<TNewsCardListProps> = ({
   const thumbnail =
     news?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
 
-  const date =
-    published_at &&
-    new Date(published_at).toLocaleString("bn-BD", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+  const date = formatDate(published_at, "date");
   return (
     <Link
       href={`/news/${slug}`}
@@ -63,6 +62,8 @@ const NewsCardList: React.FC<TNewsCardListProps> = ({
             alt={title || "Thumbnail"}
             width={500}
             height={280}
+            sizes={sizes}
+            preload={preload}
             // onError={(e) => {
             //   e.currentTarget.src = "/thumbnail.png";
             // }}

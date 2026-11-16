@@ -8,7 +8,7 @@ const NewsHeadlinesSectionSkeleton: React.FC = () => {
           {/* Left: Title section */}
           <div className="bg-primary text-primary-foreground flex h-12 w-full items-center justify-center gap-2 px-4 lg:w-auto">
             <div className="relative flex size-4">
-              <span className="bg-muted absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+              <span className="bg-muted absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full opacity-75"></span>
               <span className="bg-muted relative inline-flex size-4 rounded-full"></span>
             </div>
             <div className="bg-muted h-4 w-16 animate-pulse rounded" />

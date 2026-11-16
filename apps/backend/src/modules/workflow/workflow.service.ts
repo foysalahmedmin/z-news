@@ -141,7 +141,7 @@ const updateWorkflowStage = async (
       sendNewsNotification({
         news: news._id.toString(),
         sender: actorId,
-        type: 'news-request-response',
+        type: 'news-request-approval',
       }).catch(
         // eslint-disable-next-line no-console
         (err) => console.error('Failed to send rejection notification:', err),

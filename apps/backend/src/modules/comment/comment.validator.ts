@@ -65,7 +65,8 @@ export const updateSelfCommentsValidationSchema = z.object({
         invalid_type_error: 'Comment IDs must be an array of valid Mongo IDs',
       })
       .nonempty('At least one comment ID is required'),
-    status: statusEnum.optional(),
+    // Commenters may hide their own comments but never approve them (that is moderation).
+    status: z.enum(['pending', 'rejected']).optional(),
   }),
 });
 

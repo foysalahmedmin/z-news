@@ -22,7 +22,7 @@ const ArticleDetails = () => {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
-    setValue("title", title);
+    setValue("title", title, { shouldDirty: true });
     setValue("slug", generateSlug(title));
   };
 

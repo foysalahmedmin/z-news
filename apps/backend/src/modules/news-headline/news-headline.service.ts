@@ -74,7 +74,11 @@ export const getPublicNewsHeadlines = async (
       status: 'published',
     };
 
-    const result = await NewsHeadlineRepository.findPaginated(rest, filter);
+    const result = await NewsHeadlineRepository.findPaginated(
+      rest,
+      filter,
+      true,
+    );
     return result;
   });
 };

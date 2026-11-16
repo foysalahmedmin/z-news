@@ -79,6 +79,9 @@ export const votePoll = async (
   id: string,
   payload: TVotePollPayload,
 ): Promise<TPollResponse> => {
-  const response = await api.post(`/api/poll/${id}/vote`, payload);
+  // credentials: guests are identified by the API's guest cookie.
+  const response = await api.post(`/api/poll/${id}/vote`, payload, {
+    credentials: "include",
+  });
   return response.data as TPollResponse;
 };

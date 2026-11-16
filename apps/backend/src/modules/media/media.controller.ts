@@ -1,10 +1,9 @@
-import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catch-async';
 import sendResponse from '../../utils/send-response';
 import * as MediaService from './media.service';
 
-export const createMedia = catchAsync(async (req: Request, res: Response) => {
+export const createMedia = catchAsync(async (req, res) => {
   const result = await MediaService.createMedia(req.user!, req.body);
   sendResponse(res, {
     status: httpStatus.CREATED,
@@ -14,7 +13,7 @@ export const createMedia = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const getMedia = catchAsync(async (req: Request, res: Response) => {
+export const getMedia = catchAsync(async (req, res) => {
   const result = await MediaService.getMedia(req.params.id);
   sendResponse(res, {
     status: httpStatus.OK,
@@ -24,7 +23,7 @@ export const getMedia = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const getBulkMedia = catchAsync(async (req: Request, res: Response) => {
+export const getBulkMedia = catchAsync(async (req, res) => {
   const result = await MediaService.getBulkMedia(
     req.query as Record<string, unknown>,
   );
@@ -37,7 +36,7 @@ export const getBulkMedia = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const updateMedia = catchAsync(async (req: Request, res: Response) => {
+export const updateMedia = catchAsync(async (req, res) => {
   const result = await MediaService.updateMedia(req.params.id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
@@ -47,7 +46,7 @@ export const updateMedia = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const deleteMedia = catchAsync(async (req: Request, res: Response) => {
+export const deleteMedia = catchAsync(async (req, res) => {
   await MediaService.deleteMedia(req.params.id);
   sendResponse(res, {
     status: httpStatus.OK,

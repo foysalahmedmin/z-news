@@ -77,10 +77,7 @@ export const findBookmarksPaginated = async (
   data: TBookmark[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const BookmarkQuery = new AppQueryFind(Bookmark, {
-    ...query,
-    ...filterOverride,
-  })
+  const BookmarkQuery = new AppQueryFind(Bookmark, query, filterOverride)
     .filter()
     .sort()
     .paginate()
@@ -165,7 +162,7 @@ export const findReadingListById = async (
   id: string,
 ): Promise<TReadingListDocument | null> => {
   return await ReadingList.findById(id)
-    .populate('user', 'name email image')
+    .populate('user', 'name image')
     .populate({
       path: 'bookmarks',
       populate: {
@@ -215,7 +212,7 @@ export const findPublicReadingLists = async (
   return await ReadingList.find({ is_public: true })
     .sort({ created_at: -1 })
     .limit(limit)
-    .populate('user', 'name email image')
+    .populate('user', 'name image')
     .populate({
       path: 'bookmarks',
       populate: {
@@ -234,10 +231,7 @@ export const findReadingListsPaginated = async (
   data: TReadingList[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const ReadingListQuery = new AppQueryFind(ReadingList, {
-    ...query,
-    ...filterOverride,
-  })
+  const ReadingListQuery = new AppQueryFind(ReadingList, query, filterOverride)
     .filter()
     .sort()
     .paginate()

@@ -76,11 +76,11 @@ export const findPublicPaginated = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const eventQuery = new AppQueryFind(Event, { ...filter, ...rest })
+  const eventQuery = new AppQueryFind(Event, rest, filter)
     .populate([{ path: 'category', select: '_id name slug' }])
     .search(['name'])
-    .filter()
-    .sort()
+    .filter(['is_featured', 'category'])
+    .sort(['published_at', 'created_at', 'name', 'is_featured'])
     .paginate()
     .fields()
     .tap((q) => q.lean());

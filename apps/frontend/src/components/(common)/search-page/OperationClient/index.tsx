@@ -165,7 +165,7 @@ const OperationClient = () => {
 
   // Fetch categories once
   useEffect(() => {
-    fetchCategories()
+    fetchCategories({ limit: 100 })
       .then(({ data }) => setCategories(data || []))
       .catch(console.error);
   }, []);

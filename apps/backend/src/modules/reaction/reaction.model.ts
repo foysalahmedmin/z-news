@@ -22,17 +22,18 @@ const reactionSchema = new Schema<TReactionDocument>(
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: function () {
+      required: function (this: { guest?: unknown }): boolean {
         return !this.guest;
       },
     },
 
     guest: {
       type: String,
-      required: function () {
+      required: function (this: { user?: unknown }): boolean {
         return !this.user;
       },
-      default: null,
+      // No `default: null`: the guest unique indexes filter on `guest: {$exists: true}`,
+      // so a stored null would make every user reaction collide on {guest: null, news}.
     },
 
     type: {
@@ -61,6 +62,9 @@ const reactionSchema = new Schema<TReactionDocument>(
     toObject: { virtuals: true },
   },
 );
+
+// Per-article like/dislike counts ($match on news + type).
+reactionSchema.index({ news: 1, type: 1 });
 
 // Index for News Reactions (User)
 reactionSchema.index(

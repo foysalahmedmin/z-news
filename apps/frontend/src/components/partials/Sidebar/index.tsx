@@ -8,6 +8,7 @@ import Link from "next/link";
 import React, { memo, useState } from "react";
 import Logo from "../Logo";
 import MenuItem from "./MenuItem";
+import TodayDate from "@/components/ui/TodayDate";
 
 interface SidebarProps {
   categories?: TCategory[];
@@ -38,14 +39,7 @@ const Sidebar: React.FC<SidebarProps> = memo(
               <Logo className="text-sm" />
             </div>
             <div className="">
-              <span>
-                {new Date().toLocaleString("bn-BD", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
+              <TodayDate />
             </div>
           </div>
         </header>

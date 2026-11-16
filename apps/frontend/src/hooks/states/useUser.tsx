@@ -1,9 +1,8 @@
+import { USER_COOKIE_KEY as COOKIE_KEY, getUserCookieOptions } from "@/lib/api";
+import { signOut } from "@/services/auth.service";
 import type { TUserState } from "@/types/state.type";
 import { deleteCookie, getCookie, setCookie } from "cookies-next";
 import { useEffect, useState } from "react";
-
-const COOKIE_KEY = "user";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const useUser = () => {
   const [user, setUserState] = useState<TUserState | null>({
@@ -23,14 +22,13 @@ const useUser = () => {
   }, []);
 
   const setUser = (user: TUserState) => {
-    setCookie(COOKIE_KEY, JSON.stringify(user), {
-      path: "/",
-      maxAge: COOKIE_MAX_AGE,
-    });
+    setCookie(COOKIE_KEY, JSON.stringify(user), getUserCookieOptions());
     setUserState(user);
   };
 
   const clearUser = () => {
+    // Revokes the refresh token and clears its httpOnly cookie server-side.
+    signOut().catch(() => {});
     deleteCookie(COOKIE_KEY);
     setUserState(null);
   };

@@ -4,6 +4,8 @@ import CategoryNewsPageHeaderSection from "@/components/(common)/category-page/C
 import CategoryNewsSection from "@/components/sections/CategoryNewsSection";
 import CategoryNewsSectionSkeleton from "@/components/skeletons/sections-skeleton/CategoryNewsSectionSkeleton";
 import { fetchCategory } from "@/services/category.service";
+import { fetchBulkNews } from "@/services/news.service";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 type Props = {
@@ -12,13 +14,18 @@ type Props = {
   }>;
 };
 
-export const revalidate = 15;
+export const revalidate = 300;
+
+// No category pages at build time; each is rendered on first visit, then
+// served from the ISR cache (revalidated on demand by tag).
+export const generateStaticParams = async () => [];
 
 export const generateMetadata = async ({ params }: Props) => {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
 
   const { data } = await fetchCategory(decodedSlug);
+  if (!data) return { title: "Category Not Found" };
   return {
     title: `${data?.name} - Z-News`,
     description: data?.description,
@@ -30,6 +37,15 @@ const CategoryNewPage = async ({ params }: Props) => {
   const decodedSlug = decodeURIComponent(slug);
 
   const { data } = await fetchCategory(decodedSlug);
+  if (!data) notFound();
+
+  // First page of the archive is server-rendered so its links are in the HTML.
+  const moreNews = await fetchBulkNews({
+    page: 1,
+    limit: 12,
+    category: data._id,
+    sort: "-published_at",
+  });
 
   const hasSubCategory = data?.children && data?.children.length > 0;
 
@@ -60,7 +76,7 @@ const CategoryNewPage = async ({ params }: Props) => {
           <hr />
         </div>
 
-        <CategoryNewsMoreSection category={data} />
+        <CategoryNewsMoreSection category={data} initial={moreNews} />
       </div>
     </div>
   );

@@ -112,7 +112,7 @@ describe('GET /api/comment/public', () => {
 describe('PATCH /api/comment/:id/self', () => {
   it('should update self comment and return 200', async () => {
     const updated = { ...mockCommentData, content: 'Updated content' };
-    (CommentService.updateComment as jest.Mock).mockResolvedValue(updated);
+    (CommentService.updateSelfComment as jest.Mock).mockResolvedValue(updated);
 
     const res = await request
       .patch('/api/comment/507f1f77bcf86cd799439011/self')

@@ -97,7 +97,7 @@ const BadgesPage = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["badges"],
-    queryFn: () => fetchBadges(),
+    queryFn: () => fetchBadges({ limit: 100 }),
   });
 
   return (

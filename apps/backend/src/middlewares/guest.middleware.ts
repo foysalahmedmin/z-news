@@ -9,24 +9,21 @@ import catchAsync from '../utils/catch-async';
 const COOKIE_NAME = 'guest_token';
 const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;
 
-const initialize = async (req: Request, res: Response): Promise<TGuest> => {
-  let token = req.cookies?.[COOKIE_NAME];
+const GUEST_TTL_MS = 365 * 24 * 60 * 60 * 1000; // matches cookie maxAge
 
-  if (!token) {
-    token = crypto.randomBytes(12).toString('hex');
-    res.cookie(COOKIE_NAME, token, {
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-  }
+const clientIp = (req: Request) => (req.ip === '::1' ? '127.0.0.1' : req.ip);
 
-  // Try find guest in DB
-  let guest = await Guest.findOne({ token: token });
+// Finds the guest for the cookie; creates one only when `create` is set, so cookieless
+// GETs (crawlers, first page views) don't each insert a Guest document.
+const resolveGuest = async (
+  req: Request,
+  res: Response,
+  create: boolean,
+): Promise<TGuest | null> => {
+  const cookieToken: string | undefined = req.cookies?.[COOKIE_NAME];
 
-  // Invalidate expired guest sessions (1 year TTL, matching cookie maxAge)
-  const GUEST_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+  let guest = cookieToken ? await Guest.findOne({ token: cookieToken }) : null;
+
   if (
     guest?.created_at &&
     Date.now() - new Date(guest.created_at).getTime() > GUEST_TTL_MS
@@ -34,28 +31,34 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
     guest = null;
   }
 
-  if (!guest) {
-    guest = await Guest.create({
-      token: token,
-      session_id: req.sessionID,
-      ip_address: req.ip === '::1' ? '127.0.0.1' : req.ip,
-      user_agent: req.get('User-Agent') || '',
-      fingerprint: req.get('User-Agent')
-        ? crypto.createHash('md5').update(req.get('User-Agent')!).digest('hex')
-        : '',
-      preferences: {},
-    });
-  } else {
-    guest.session_id = req.sessionID;
-    guest.ip_address = req.ip === '::1' ? '127.0.0.1' : req.ip;
+  if (guest) {
+    // Mongoose skips the write when nothing changed.
+    guest.ip_address = clientIp(req);
     guest.user_agent = req.get('User-Agent') || guest.user_agent;
     await guest.save();
+    return guest.toObject() as unknown as TGuest;
   }
 
-  // Attach to session
-  req.session.guest = guest.toObject();
+  if (!create) return null;
 
-  return guest as unknown as TGuest;
+  // A fresh token also replaces an expired one (token is unique).
+  const token = crypto.randomBytes(12).toString('hex');
+  const created = await Guest.create({
+    token: token,
+    ip_address: clientIp(req),
+    user_agent: req.get('User-Agent') || '',
+    fingerprint: req.get('User-Agent')
+      ? crypto.createHash('md5').update(req.get('User-Agent')!).digest('hex')
+      : '',
+    preferences: {},
+  });
+  res.cookie(COOKIE_NAME, token, {
+    maxAge: COOKIE_MAX_AGE,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+  return created.toObject() as unknown as TGuest;
 };
 
 // Enrich guest with preferences
@@ -82,23 +85,19 @@ export const enrichGuestFromRequest = async (
 
 const guest = (status: 'mandatory' | 'optional') =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    let guest: TGuest | undefined = req.session?.guest;
+    // Only writes need a guest identity; logged-in requests never need one.
+    const create =
+      !req.headers.authorization && !['GET', 'HEAD'].includes(req.method);
+    const guest = await resolveGuest(req, res, create);
 
-    // Initialize guest if missing or invalid
-    if (!guest || !guest?._id) {
-      guest = await initialize(req, res);
-    }
-
-    // Check mandatory status
-    if ((!guest || !guest?._id) && status === 'mandatory') {
+    if (!guest && status === 'mandatory') {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
         'Unable to establish guest session.',
       );
     }
 
-    // Attach guest to req for downstream use
-    if (guest && guest._id) {
+    if (guest) {
       req.guest = guest;
     }
 

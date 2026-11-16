@@ -45,7 +45,7 @@ export default function UserBookmarksPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: BOOKMARKS_QUERY_KEY,
-    queryFn: () => fetchMyBookmarks(),
+    queryFn: () => fetchMyBookmarks({ limit: 100 }),
   });
 
   const { data: readingListsRes } = useQuery({

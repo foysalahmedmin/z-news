@@ -64,23 +64,60 @@ const mockReactionDoc = (
 // ─── Threading ────────────────────────────────────────────────────────────────
 
 describe('EnhancedCommentService.getThreadedComments', () => {
-  it('should return top level comments with their replies', async () => {
-    const topLevel = [mockCommentDoc()];
-    const replies = [
-      mockCommentDoc({ content: 'Reply content', thread_level: 1 }),
-    ];
+  const doc = (fields: Record<string, unknown>) =>
+    ({
+      ...fields,
+      toObject: () => ({ ...fields }),
+    }) as unknown as TCommentDocument;
 
-    (CommentRepository.getThreadedComments as jest.Mock).mockResolvedValue(
-      topLevel,
-    );
-    (CommentRepository.getCommentReplies as jest.Mock).mockResolvedValue(
-      replies,
-    );
+  it('should nest replies, set is_owner and never expose guest or email', async () => {
+    const top = doc({
+      _id: 'c1',
+      parent_comment: null,
+      user: { _id: 'user-1', name: 'A' },
+      guest: null,
+      email: 'a@example.com',
+    });
+    const reply = doc({
+      _id: 'c2',
+      parent_comment: 'c1',
+      guest: 'guest-token',
+      email: 'g@example.com',
+    });
+    const nested = doc({ _id: 'c3', parent_comment: 'c2', guest: 'other' });
 
-    const result = await EnhancedCommentService.getThreadedComments('news-id');
+    (CommentRepository.getThreadedComments as jest.Mock).mockResolvedValue([
+      top,
+    ]);
+    (CommentRepository.getThreadReplies as jest.Mock).mockResolvedValue([
+      reply,
+      nested,
+    ]);
+    (CommentRepository.count as jest.Mock).mockResolvedValue(3);
 
-    expect(result[0].replies).toEqual(replies);
-    expect(result[0].reply_count).toBe(1);
+    const result = await EnhancedCommentService.getThreadedComments('news-id', {
+      guestToken: 'guest-token',
+    });
+
+    expect(result.total).toBe(3);
+    const [first] = result.data;
+    expect(first.is_owner).toBe(false);
+    expect(first.reply_count).toBe(1);
+    expect(first.replies[0]).toMatchObject({ _id: 'c2', is_owner: true });
+    expect(first.replies[0].replies[0]).toMatchObject({
+      _id: 'c3',
+      is_owner: false,
+    });
+    expect(JSON.stringify(result)).not.toMatch(/guest|email/);
+    expect(CommentRepository.count).toHaveBeenCalledWith({
+      news: 'news-id',
+      status: 'approved',
+    });
+
+    const asUser = await EnhancedCommentService.getThreadedComments('news-id', {
+      userId: 'user-1',
+    });
+    expect(asUser.data[0].is_owner).toBe(true);
   });
 });
 

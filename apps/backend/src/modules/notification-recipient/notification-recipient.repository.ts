@@ -95,10 +95,11 @@ export const findPaginated = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const NotificationRecipientQuery = new AppQueryFind(NotificationRecipient, {
-    ...query,
-    ...filterOverride,
-  })
+  const NotificationRecipientQuery = new AppQueryFind(
+    NotificationRecipient,
+    query,
+    filterOverride,
+  )
     .populate([
       { path: 'recipient', select: '_id name email image' },
       { path: 'notification', select: '_id title type sender' },

@@ -24,7 +24,6 @@ export const globalRateLimiter = rateLimit({
     message:
       'Too many requests from this IP, please try again after 15 minutes',
   },
-  validate: { trustProxy: false },
 });
 
 // Stricter rate limiter for authentication routes (login, register, forgot password)
@@ -39,7 +38,6 @@ export const authRateLimiter = rateLimit({
     message:
       'Too many authentication attempts, please try again after 15 minutes',
   },
-  validate: { trustProxy: false },
 });
 
 // Very strict limiter for forget-password to prevent email enumeration/abuse
@@ -54,5 +52,4 @@ export const forgetPasswordRateLimiter = rateLimit({
     message:
       'Too many password reset requests from this IP, please try again after 15 minutes',
   },
-  validate: { trustProxy: false },
 });

@@ -1,19 +1,225 @@
-"use client";
+import type { LucideIcon, LucideProps } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Archive,
+  ArrowRight,
+  Award,
+  Banknote,
+  Bell,
+  Blocks,
+  Book,
+  BookOpen,
+  Bookmark,
+  Briefcase,
+  Building,
+  Building2,
+  Calendar,
+  CalendarClock,
+  Camera,
+  Car,
+  CheckCircle,
+  Circle,
+  Church,
+  Clapperboard,
+  Clock,
+  CloudRain,
+  Coffee,
+  Coins,
+  Cpu,
+  DollarSign,
+  Dumbbell,
+  Earth,
+  Edit2,
+  Eye,
+  Facebook,
+  Factory,
+  Feather,
+  File,
+  FileEdit,
+  FileText,
+  Film,
+  Flag,
+  FlaskConical,
+  Folder,
+  FolderOpen,
+  Gamepad2,
+  Gavel,
+  Globe,
+  GraduationCap,
+  Hash,
+  Headphones,
+  Heart,
+  HeartPulse,
+  House,
+  Image as ImageIcon,
+  Instagram,
+  Landmark,
+  Laptop,
+  LayoutDashboard,
+  LayoutTemplate,
+  Leaf,
+  Lightbulb,
+  Linkedin,
+  List,
+  Map as MapIcon,
+  MapPin,
+  Megaphone,
+  MessageSquare,
+  MessageSquareQuote,
+  Mic,
+  Microscope,
+  Mountain,
+  Music,
+  Newspaper,
+  Palette,
+  Plane,
+  Radio,
+  Rocket,
+  Scale,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Smartphone,
+  Smile,
+  Sparkles,
+  Star,
+  Stethoscope,
+  Sun,
+  Tag,
+  Trash,
+  TrendingUp,
+  Trophy,
+  Tv,
+  User,
+  Users,
+  Utensils,
+  Video,
+  Volleyball,
+  Vote,
+  Wheat,
+  X,
+  XCircle,
+  Zap,
+} from "lucide-react";
 
-import * as icons from "lucide-react";
-import React from "react";
+// Explicit list instead of `import * as icons` so only these icons ship.
+// Covers every name used in code and menu data, plus common news-section
+// icons for the free-text `icon` field on categories/events.
+// shortcut: a category/event icon outside this list renders nothing; add it
+// here (or switch to lucide-react's dynamic per-icon import) if admins need more.
+const ICONS: Record<string, LucideIcon> = {
+  Activity,
+  AlertTriangle,
+  Archive,
+  ArrowRight,
+  Award,
+  Banknote,
+  Bell,
+  Blocks,
+  Book,
+  BookOpen,
+  Bookmark,
+  Briefcase,
+  Building,
+  Building2,
+  Calendar,
+  CalendarClock,
+  Camera,
+  Car,
+  CheckCircle,
+  Circle,
+  Church,
+  Clapperboard,
+  Clock,
+  CloudRain,
+  Coffee,
+  Coins,
+  Cpu,
+  DollarSign,
+  Dumbbell,
+  Earth,
+  Edit2,
+  Eye,
+  Facebook,
+  Factory,
+  Feather,
+  File,
+  FileEdit,
+  FileText,
+  Film,
+  Flag,
+  FlaskConical,
+  Folder,
+  FolderOpen,
+  Gamepad2,
+  Gavel,
+  Globe,
+  GraduationCap,
+  Hash,
+  Headphones,
+  Heart,
+  HeartPulse,
+  Home: House,
+  House,
+  Image: ImageIcon,
+  Instagram,
+  Landmark,
+  Laptop,
+  LayoutDashboard,
+  LayoutTemplate,
+  Leaf,
+  Lightbulb,
+  Linkedin,
+  List,
+  Map: MapIcon,
+  MapPin,
+  Megaphone,
+  MessageSquare,
+  MessageSquareQuote,
+  Mic,
+  Microscope,
+  Mountain,
+  Music,
+  Newspaper,
+  Palette,
+  Plane,
+  Radio,
+  Rocket,
+  Scale,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Smartphone,
+  Smile,
+  Sparkles,
+  Star,
+  Stethoscope,
+  Sun,
+  Tag,
+  Trash,
+  TrendingUp,
+  Trophy,
+  Tv,
+  User,
+  Users,
+  Utensils,
+  Video,
+  Volleyball,
+  Vote,
+  Wheat,
+  X,
+  XCircle,
+  Zap,
+};
 
-type ValidIconProps = Omit<React.SVGProps<SVGSVGElement>, "ref">;
+/** Icon names accepted by <Icon name="…">, in the kebab-case admins type. */
+export const ICON_NAMES = Object.keys(ICONS).map((key) =>
+  key.replace(/(?!^)([A-Z])/g, "-$1").toLowerCase(),
+);
 
-// Extract only valid icon keys
-type IconKeys = {
-  [K in keyof typeof icons]: (typeof icons)[K] extends React.ComponentType<ValidIconProps>
-    ? K
-    : never;
-}[keyof typeof icons];
-
-interface IconProps extends React.SVGProps<SVGSVGElement> {
-  name: IconKeys | string;
+interface IconProps extends LucideProps {
+  name: string;
 }
 
 function toPascalCase(input: string): string {
@@ -26,14 +232,12 @@ function toPascalCase(input: string): string {
 }
 
 const Icon = ({ name, ...props }: IconProps) => {
-  const iconKeyName = toPascalCase(name) as keyof typeof icons;
+  const LucideIcon = ICONS[toPascalCase(name)];
 
-  if (!(iconKeyName in icons)) {
-    console.warn(`[Icon] Invalid icon name: "${name}"`);
+  if (!LucideIcon) {
+    console.warn(`[Icon] Unknown icon name: "${name}"`);
     return null;
   }
-
-  const LucideIcon = icons[iconKeyName] as React.FC<ValidIconProps>;
 
   return <LucideIcon {...props} />;
 };

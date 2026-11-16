@@ -53,6 +53,35 @@ logSchema.index(
 // Log model
 const Log = mongoose.model('Log', logSchema);
 
+// Keys whose values must never be persisted (passwords, tokens, secrets, API keys).
+const SENSITIVE_KEY = /pass|token|secret|authorization|api[-_]?key|cookie/i;
+
+export const redact = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(redact);
+  // Plain objects only (multer bodies have a null prototype); leave Buffers, Dates etc. alone.
+  if (value === null || typeof value !== 'object') return value;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === Object.prototype || proto === null) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, val]) => [
+        key,
+        SENSITIVE_KEY.test(key) ? '[REDACTED]' : redact(val),
+      ]),
+    );
+  }
+  return value;
+};
+
+// Responses arrive as JSON strings from res.json(); parse so tokens inside get redacted too.
+const redactBody = (body: unknown): unknown => {
+  if (typeof body !== 'string') return redact(body);
+  try {
+    return redact(JSON.parse(body));
+  } catch {
+    return body;
+  }
+};
+
 // Log Middleware
 const log: RequestHandler = (req, res, next) => {
   const start = Date.now();
@@ -101,8 +130,8 @@ const log: RequestHandler = (req, res, next) => {
         method: req.method,
         url: req.originalUrl,
         status: res.statusCode,
-        payload: req.body,
-        response: responseBody,
+        payload: redact(req.body),
+        response: redactBody(responseBody),
         duration: Date.now() - start,
         date: new Date(),
       });

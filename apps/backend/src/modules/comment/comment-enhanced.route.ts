@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import auth from '../../middlewares/auth.middleware';
+import guest from '../../middlewares/guest.middleware';
 import validation from '../../middlewares/validation.middleware';
 import { EnhancedCommentController } from './comment-enhanced.controller';
 import { EnhancedCommentValidation } from './comment-enhanced.validator';
@@ -9,8 +10,20 @@ const router = Router();
 // ============ THREADING ROUTES ============
 
 // Get threaded comments for news article
+// Public; an optional user token or guest cookie only drives each comment's `is_owner`.
 router.get(
   '/news/:news_id/threaded',
+  guest('optional'),
+  auth(
+    'guest',
+    'super-admin',
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+  ),
   validation(EnhancedCommentValidation.getThreadedCommentsSchema),
   EnhancedCommentController.getThreadedComments,
 );

@@ -21,7 +21,7 @@ const COLUMNS = [
 const NewsArticlesWorkflowKanbanSection = () => {
   const { data: workflowsData, isLoading } = useQuery({
     queryKey: ["workflows"],
-    queryFn: () => fetchAllWorkflows(),
+    queryFn: () => fetchAllWorkflows({ limit: 100 }),
   });
 
   if (isLoading) return <Loader />;

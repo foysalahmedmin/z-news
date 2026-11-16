@@ -26,6 +26,8 @@ const NewsFeaturedSection = async () => {
               )}
               type={"list"}
               news={lead}
+              sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+              preload // home page LCP image
             />
           </div>
 

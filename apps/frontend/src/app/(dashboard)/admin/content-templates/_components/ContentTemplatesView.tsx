@@ -30,7 +30,7 @@ const ContentTemplatesView = () => {
 
   const { data: templatesData, isLoading } = useQuery({
     queryKey: ["templates"],
-    queryFn: () => fetchTemplates(),
+    queryFn: () => fetchTemplates({ limit: 100 }),
   });
 
   const deleteMutation = useMutation({

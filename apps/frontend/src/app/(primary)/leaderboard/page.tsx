@@ -1,5 +1,6 @@
 import { getTopUsers } from "@/services/user-profile.service";
 import type { TUserProfile } from "@/types/user-profile.type";
+import { userImageUrl } from "@/utils/userImageUrl";
 import { Award, Medal, Star, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -112,9 +113,10 @@ const LeaderboardPage = async () => {
                 <div className="bg-muted relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-full">
                   {user?.image ? (
                     <Image
-                      src={user.image}
+                      src={userImageUrl(user.image)}
                       alt={user.name}
                       fill
+                      sizes="44px"
                       className="object-cover"
                     />
                   ) : (

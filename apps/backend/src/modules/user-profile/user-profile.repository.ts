@@ -34,8 +34,8 @@ export const findById = async (
 export const findByUserId = async (
   userId: string,
   populateFields: TPopulate[] = [
-    { path: 'user', select: 'name email image role' },
-    { path: 'following_authors', select: 'name email image' },
+    { path: 'user', select: 'name image role' },
+    { path: 'following_authors', select: 'name image' },
     { path: 'following_categories', select: 'name slug icon' },
     { path: 'badges.badge_id', select: 'name description icon' },
   ],
@@ -102,10 +102,7 @@ export const findByUserIdAndUpdate = async (
 export const incrementActivityStat = async (
   userId: string,
   stat:
-    | 'total_comments'
-    | 'total_reactions'
-    | 'articles_read'
-    | 'reputation_score',
+    'total_comments' | 'total_reactions' | 'articles_read' | 'reputation_score',
   amount: number = 1,
 ): Promise<TUserProfileDocument | null> => {
   return await UserProfile.findOneAndUpdate(

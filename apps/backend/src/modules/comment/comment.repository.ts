@@ -99,15 +99,17 @@ export const findPaginated = async (
   filter: Record<string, unknown>,
   query: Record<string, unknown>,
   populateFields: TPopulate[] = [],
+  allowedFilters?: (keyof TComment)[],
+  allowedFields?: (keyof TComment)[],
 ): Promise<{
   data: TComment[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
-    .filter()
-    .sort()
+  const commentQuery = new AppQueryFind(Comment, query, filter)
+    .filter(allowedFilters)
+    .sort(allowedFilters && ['created_at'])
     .paginate()
-    .fields()
+    .fields(allowedFields)
     .tap((q) => q.lean());
 
   if (populateFields.length > 0) {
@@ -119,26 +121,53 @@ export const findPaginated = async (
 
 // ─── Threaded Comments ───────────────────────────────────────────────────────
 
+const THREAD_POPULATE = [
+  { path: 'user', select: 'name image' },
+  { path: 'reply_to_user', select: 'name' },
+  { path: 'mentions.user', select: 'name' },
+  { path: 'reactions', select: 'user type created_at' },
+];
+
+// Visible (approved) top-level comments of an article, pinned first then newest.
 export const getThreadedComments = async (
   newsId: string,
+  limit: number,
 ): Promise<TCommentDocument[]> => {
-  return await Comment.find({ news: newsId, parent_comment: null })
+  return await Comment.find({
+    news: newsId,
+    parent_comment: null,
+    status: 'approved',
+  })
     .sort({ is_pinned: -1, created_at: -1 })
-    .populate('user', 'name email image')
-    .populate('mentions.user', 'name')
-    .populate('reactions', 'user type created_at')
+    .limit(limit)
+    .populate(THREAD_POPULATE)
     .exec();
 };
 
+// Every visible reply of an article in one query (the caller builds the tree).
+export const getThreadReplies = async (
+  newsId: string,
+  limit: number,
+): Promise<TCommentDocument[]> => {
+  return await Comment.find({
+    news: newsId,
+    parent_comment: { $ne: null },
+    status: 'approved',
+  })
+    .sort({ created_at: 1 })
+    .limit(limit)
+    .populate(THREAD_POPULATE)
+    .exec();
+};
+
+// Public: visible direct replies, without the guest token or commenter email.
 export const getCommentReplies = async (
   commentId: string,
 ): Promise<TCommentDocument[]> => {
-  return await Comment.find({ parent_comment: commentId })
+  return await Comment.find({ parent_comment: commentId, status: 'approved' })
+    .select('-guest -email')
     .sort({ created_at: 1 })
-    .populate('user', 'name email image')
-    .populate('reply_to_user', 'name')
-    .populate('mentions.user', 'name')
-    .populate('reactions', 'user type created_at')
+    .populate(THREAD_POPULATE)
     .exec();
 };
 

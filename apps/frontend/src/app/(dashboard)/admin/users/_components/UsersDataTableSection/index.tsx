@@ -4,13 +4,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { TColumn } from "@/components/ui/DataTable";
 import DataTable from "@/components/ui/DataTable";
-import { URLS } from "@/config";
 import useUser from "@/hooks/states/useUser";
 import { cn } from "@/lib/utils";
 import type { TUser } from "@/types/admin-user.type";
 import { BadgeIcon, Edit, Eye, Trash } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { userImageUrl } from "@/utils/userImageUrl";
 
 // Ported from apps/adminpanel's
 // `components/(common)/users-page/UsersDataTableSection`. The original also
@@ -49,7 +49,7 @@ const UsersDataTableSection: React.FC<UsersDataTableSectionProps> = ({
             {row.image && (
               <img
                 className="size-full object-cover"
-                src={URLS.user + "/" + row.image}
+                src={userImageUrl(row.image)}
                 alt=""
               />
             )}

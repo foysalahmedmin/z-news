@@ -65,10 +65,11 @@ export const findPaginated = async (
   data: TNotification[];
   meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
-  const NotificationQuery = new AppQueryFind(Notification, {
-    ...query,
-    ...filterOverride,
-  })
+  const NotificationQuery = new AppQueryFind(
+    Notification,
+    query,
+    filterOverride,
+  )
     .search(['title', 'message', 'type', 'priority'])
     .filter()
     .sort()

@@ -6,11 +6,7 @@ import mongoose from 'mongoose';
 import nodePath from 'path';
 import AppError from '../../builder/app-error';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
-import {
-  generateCacheKey,
-  invalidateCacheByPattern,
-  withCache,
-} from '../../utils/cache.utils';
+import { generateCacheKey, withCache } from '../../utils/cache.utils';
 import { ArticleVersion as ArticleVersionModel } from '../article-version/article-version.model';
 import { ArticleVersionService } from '../article-version/article-version.service';
 import { Bookmark as BookmarkModel } from '../bookmark/bookmark.model';
@@ -21,10 +17,49 @@ import { sendNewsNotification } from '../notification/notification.service';
 import { Poll as PollModel } from '../poll/poll.model';
 import { Reaction as ReactionModel } from '../reaction/reaction.model';
 import { slugify } from '../../utils/slugify';
+import { NEWS_FEATURE_ROLES, NEWS_PUBLISH_ROLES } from './news.policy';
 import * as NewsRepository from './news.repository';
 import { TNews } from './news.type';
 
+// Cache invalidation for news writes lives in the News model hooks (news.model.ts).
 const CACHE_PREFIX = 'news';
+
+// Authors/contributors only see and manage their own articles.
+const isOwnOnly = (user: TJwtPayload) =>
+  user.role === 'author' || user.role === 'contributor';
+
+// Authors/contributors may only draft or submit for review; publishing, scheduling,
+// archiving and featuring are editorial decisions (editor/admin/workflow).
+const applyEditorialPolicy = <T extends Partial<TNews>>(
+  user: TJwtPayload,
+  payload: T,
+): T => {
+  const update = { ...payload };
+  if (!NEWS_FEATURE_ROLES.includes(user.role!)) delete update.is_featured;
+  if (
+    !NEWS_PUBLISH_ROLES.includes(user.role!) &&
+    update.status &&
+    !['draft', 'pending'].includes(update.status)
+  ) {
+    update.status = 'pending';
+  }
+  return update;
+};
+
+// Engagement counts change on every view/reaction, so they are attached outside the
+// news cache (and never invalidate it); a short cache keeps them cheap.
+const withEngagement = async <T>(items: T[]): Promise<T[]> => {
+  const ids = items.map((item) => String((item as { _id: unknown })._id));
+  if (!ids.length) return items;
+  const counts = await withCache(
+    generateCacheKey('news-counts', [ids.join(',')]),
+    60,
+    () => NewsRepository.countEngagement(ids),
+  );
+  return items.map((item, i) => ({ ...item, ...counts[ids[i]] }));
+};
+
+const PUBLIC_AUTHOR = { path: 'author', select: '_id name image' };
 
 const ensureUniqueSlug = async (
   baseSlug: string,
@@ -60,12 +95,14 @@ const getCategoryIds = async ({
   category?: string;
   category_slug?: string;
 }) => {
-  if (category || category_slug) {
+  // The frontend can send `category=undefined`; ignore ids that aren't ObjectIds.
+  const validId = !!category && mongoose.isValidObjectId(category);
+  if (validId || category_slug) {
     const categories = await Category.aggregate([
       {
         $match: {
           $or: [
-            ...(category
+            ...(validId
               ? [{ _id: new mongoose.Types.ObjectId(category) }]
               : []),
             ...(category_slug ? [{ slug: category_slug }] : []),
@@ -154,23 +191,22 @@ export const createNews = async (
   payload: Partial<TNews>,
 ): Promise<TNews> => {
   const data = {
-    ...payload,
+    ...applyEditorialPolicy(user, payload),
     author: user._id as unknown as mongoose.Types.ObjectId,
   } as TNews;
   const result = await NewsRepository.create(data);
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return result.toObject() as TNews;
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {
-  return await withCache(
+  const news = await withCache(
     generateCacheKey(CACHE_PREFIX, ['slug', slug]),
     CACHE_TTL,
     async () => {
       const result = await NewsRepository.findOneLean(
         { slug: slug, status: 'published' },
         [
-          { path: 'author', select: '_id name email image' },
+          PUBLIC_AUTHOR,
           { path: 'category', select: '_id name slug' },
           { path: 'categories', select: '_id name slug' },
           { path: 'event', select: '_id name slug' },
@@ -182,10 +218,6 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
             path: 'video',
             select: '_id url name filename mimetype caption metadata',
           },
-          { path: 'views' },
-          { path: 'likes' },
-          { path: 'dislikes' },
-          { path: 'comments' },
         ],
       );
 
@@ -195,23 +227,21 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
       return result;
     },
   );
+  return (await withEngagement([news]))[0];
 };
 
 export const getSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNews> => {
-  return await withCache(
-    generateCacheKey(CACHE_PREFIX, ['id', id]),
+  // Own cache key: an owner-scoped read must never be served from the unscoped `id` key.
+  const news = await withCache(
+    generateCacheKey(CACHE_PREFIX, ['self', user._id, 'id', id]),
     CACHE_TTL,
     async () => {
       const result = await NewsRepository.findOneLean(
         { _id: id, author: user._id },
         [
-          { path: 'views' },
-          { path: 'likes' },
-          { path: 'dislikes' },
-          { path: 'comments' },
           { path: 'author', select: '_id name email image' },
           { path: 'category', select: '_id name slug' },
           { path: 'categories', select: '_id name slug' },
@@ -237,18 +267,20 @@ export const getSelfNews = async (
       return result;
     },
   );
+  return (await withEngagement([news]))[0];
 };
 
-export const getNews = async (id: string): Promise<TNews> => {
-  return await withCache(
+export const getNews = async (
+  user: TJwtPayload,
+  id: string,
+): Promise<TNews> => {
+  if (isOwnOnly(user)) return await getSelfNews(user, id);
+
+  const news = await withCache(
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
       const result = await NewsRepository.findOneLean({ _id: id }, [
-        { path: 'views' },
-        { path: 'likes' },
-        { path: 'dislikes' },
-        { path: 'comments' },
         { path: 'author', select: '_id name email image' },
         { path: 'category', select: '_id name slug' },
         { path: 'categories', select: '_id name slug' },
@@ -273,77 +305,94 @@ export const getNews = async (id: string): Promise<TNews> => {
       return result;
     },
   );
+  return (await withEngagement([news]))[0];
 };
+
+// Turns the category/date/news_ne params into server-side filters; the remaining params
+// go to the query builder, which only applies the filter fields each endpoint allows.
+const splitListQuery = async (
+  query: Record<string, unknown>,
+  { upToNow = false } = {},
+) => {
+  const {
+    category,
+    category_slug,
+    published_at,
+    published_at_gte,
+    published_at_lte,
+    date,
+    news_ne,
+    ...rest
+  } = query;
+  const filter: Record<string, unknown> = {};
+
+  const categories_ids = await getCategoryIds({
+    category: category as string,
+    category_slug: category_slug as string,
+  });
+  if (categories_ids.length > 0) {
+    filter.category = { $in: categories_ids };
+  }
+
+  if (published_at) {
+    const start = new Date(published_at as string);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(published_at as string);
+    end.setHours(23, 59, 59, 999);
+    filter.published_at = { $gte: start, $lte: end };
+  } else if (published_at_gte || published_at_lte) {
+    const range: Record<string, Date> = {};
+    if (published_at_gte) {
+      const start = new Date(published_at_gte as string);
+      start.setHours(0, 0, 0, 0);
+      range.$gte = start;
+    }
+    if (published_at_lte) {
+      const end = new Date(published_at_lte as string);
+      end.setHours(23, 59, 59, 999);
+      range.$lte = end;
+    }
+    filter.published_at = range;
+  } else if (date) {
+    const end = new Date(date as string);
+    end.setHours(23, 59, 59, 999);
+    filter.published_at = { $lte: end };
+  } else if (upToNow) {
+    filter.published_at = { $lte: new Date() };
+  }
+
+  if (news_ne && mongoose.isValidObjectId(news_ne)) {
+    filter._id = { $ne: news_ne };
+  }
+
+  return { rest, filter };
+};
+
+const STATUS_FACETS = [
+  { key: 'published', filter: { status: 'published' } },
+  { key: 'draft', filter: { status: 'draft' } },
+  { key: 'pending', filter: { status: 'pending' } },
+];
+
+type TNewsList = {
+  data: TNews[];
+  meta: { total: number; page: number; limit: number };
+};
+
+const withListEngagement = async (result: TNewsList): Promise<TNewsList> => ({
+  ...result,
+  data: await withEngagement(result.data),
+});
 
 export const getPublicBulkNews = async (
   query: Record<string, unknown>,
-): Promise<{
-  data: TNews[];
-  meta: { total: number; page: number; limit: number };
-}> => {
+): Promise<TNewsList> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
-  return await withCache(cacheKey, CACHE_TTL, async () => {
-    const {
-      category: q_category,
-      category_slug: q_category_slug,
-      published_at: q_published_at,
-      published_at_gte: q_published_at_gte,
-      published_at_lte: q_published_at_lte,
-      date: q_date,
-      news_ne,
-      ...rest
-    } = query;
+  const result = await withCache(cacheKey, CACHE_TTL, async () => {
+    const { rest, filter } = await splitListQuery(query, { upToNow: true });
 
-    const category = q_category as string;
-    const category_slug = q_category_slug as string;
-
-    const categories_ids = await getCategoryIds({ category, category_slug });
-
-    if (categories_ids.length > 0) {
-      rest.category = { $in: categories_ids };
-    }
-
-    if (q_published_at) {
-      const start = new Date(q_published_at as string);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(q_published_at as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $gte: start, $lte: end };
-    } else if (q_published_at_gte || q_published_at_lte) {
-      const filter: Record<string, Date> = {};
-
-      if (q_published_at_gte) {
-        const start = new Date(q_published_at_gte as string);
-        start.setHours(0, 0, 0, 0);
-        filter.$gte = start;
-      }
-
-      if (q_published_at_lte) {
-        const end = new Date(q_published_at_lte as string);
-        end.setHours(23, 59, 59, 999);
-        filter.$lte = end;
-      }
-
-      rest.published_at = filter;
-    } else if (q_date) {
-      const end = new Date(q_date as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $lte: end };
-    } else {
-      const end = new Date();
-
-      rest.published_at = { $lte: end };
-    }
-
-    if (news_ne) {
-      rest._id = { $ne: news_ne };
-    }
-
-    const result = await NewsRepository.findPublicPaginated(rest, [
-      { path: 'author', select: '_id name email image' },
+    return await NewsRepository.findPublicPaginated(rest, filter, [
+      PUBLIC_AUTHOR,
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
@@ -355,82 +404,28 @@ export const getPublicBulkNews = async (
         path: 'video',
         select: '_id url name filename mimetype caption metadata',
       },
-      { path: 'views' },
-      { path: 'likes' },
-      { path: 'dislikes' },
-      { path: 'comments' },
     ]);
-    return result;
   });
+  return await withListEngagement(result);
 };
 
 export const getSelfBulkNews = async (
   user: TJwtPayload,
   query: Record<string, unknown>,
-): Promise<{
-  data: TNews[];
-  meta: { total: number; page: number; limit: number };
-}> => {
+): Promise<TNewsList> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, [
     'self',
     user._id,
     'list',
     query,
   ]);
-  return await withCache(cacheKey, CACHE_TTL, async () => {
-    const {
-      category: q_category,
-      category_slug: q_category_slug,
-      published_at: q_published_at,
-      published_at_gte: q_published_at_gte,
-      published_at_lte: q_published_at_lte,
-      date: q_date,
-      ...rest
-    } = query;
+  const result = await withCache(cacheKey, CACHE_TTL, async () => {
+    const { rest, filter } = await splitListQuery(query);
 
-    const category = q_category as string;
-    const category_slug = q_category_slug as string;
-
-    const categories_ids = await getCategoryIds({ category, category_slug });
-
-    if (categories_ids.length > 0) {
-      rest.category = { $in: categories_ids };
-    }
-
-    if (q_published_at) {
-      const start = new Date(q_published_at as string);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(q_published_at as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $gte: start, $lte: end };
-    } else if (q_published_at_gte || q_published_at_lte) {
-      const filter: Record<string, Date> = {};
-
-      if (q_published_at_gte) {
-        const start = new Date(q_published_at_gte as string);
-        start.setHours(0, 0, 0, 0);
-        filter.$gte = start;
-      }
-
-      if (q_published_at_lte) {
-        const end = new Date(q_published_at_lte as string);
-        end.setHours(23, 59, 59, 999);
-        filter.$lte = end;
-      }
-
-      rest.published_at = filter;
-    } else if (q_date) {
-      const end = new Date(q_date as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $lte: end };
-    }
-
-    const result = await NewsRepository.findSelfPaginated(
+    return await NewsRepository.findSelfPaginated(
       user._id,
       rest,
+      filter,
       [
         { path: 'author', select: '_id name email image' },
         { path: 'category', select: '_id name slug' },
@@ -440,90 +435,26 @@ export const getSelfBulkNews = async (
           path: 'thumbnail',
           select: '_id url name filename mimetype caption metadata',
         },
-
-        { path: 'likes' },
-        { path: 'dislikes' },
-        { path: 'comments' },
       ],
-      [
-        {
-          key: 'published',
-          filter: { status: 'published' },
-        },
-        {
-          key: 'draft',
-          filter: { status: 'draft' },
-        },
-        {
-          key: 'pending',
-          filter: { status: 'pending' },
-        },
-      ],
+      STATUS_FACETS,
     );
-    return result;
   });
+  return await withListEngagement(result);
 };
 
 export const getBulkNews = async (
+  user: TJwtPayload,
   query: Record<string, unknown>,
-): Promise<{
-  data: TNews[];
-  meta: { total: number; page: number; limit: number };
-}> => {
+): Promise<TNewsList> => {
+  if (isOwnOnly(user)) return await getSelfBulkNews(user, query);
+
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
-  return await withCache(cacheKey, CACHE_TTL, async () => {
-    const {
-      category: q_category,
-      category_slug: q_category_slug,
-      published_at: q_published_at,
-      published_at_gte: q_published_at_gte,
-      published_at_lte: q_published_at_lte,
-      date: q_date,
-      ...rest
-    } = query;
+  const result = await withCache(cacheKey, CACHE_TTL, async () => {
+    const { rest, filter } = await splitListQuery(query);
 
-    const category = q_category as string;
-    const category_slug = q_category_slug as string;
-
-    const categories_ids = await getCategoryIds({ category, category_slug });
-
-    if (categories_ids.length > 0) {
-      rest.category = { $in: categories_ids };
-    }
-
-    if (q_published_at) {
-      const start = new Date(q_published_at as string);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(q_published_at as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $gte: start, $lte: end };
-    } else if (q_published_at_gte || q_published_at_lte) {
-      const filter: Record<string, Date> = {};
-
-      if (q_published_at_gte) {
-        const start = new Date(q_published_at_gte as string);
-        start.setHours(0, 0, 0, 0);
-        filter.$gte = start;
-      }
-
-      if (q_published_at_lte) {
-        const end = new Date(q_published_at_lte as string);
-        end.setHours(23, 59, 59, 999);
-        filter.$lte = end;
-      }
-
-      rest.published_at = filter;
-    } else if (q_date) {
-      const end = new Date(q_date as string);
-      end.setHours(23, 59, 59, 999);
-
-      rest.published_at = { $lte: end };
-    }
-
-    const result = await NewsRepository.findAdminPaginated(
+    return await NewsRepository.findAdminPaginated(
       rest,
+      filter,
       [
         { path: 'author', select: '_id name email image' },
         { path: 'category', select: '_id name slug' },
@@ -537,28 +468,11 @@ export const getBulkNews = async (
           path: 'video',
           select: '_id url name filename mimetype caption metadata',
         },
-        { path: 'views' },
-        { path: 'likes' },
-        { path: 'dislikes' },
-        { path: 'comments' },
       ],
-      [
-        {
-          key: 'published',
-          filter: { status: 'published' },
-        },
-        {
-          key: 'draft',
-          filter: { status: 'draft' },
-        },
-        {
-          key: 'pending',
-          filter: { status: 'pending' },
-        },
-      ],
+      STATUS_FACETS,
     );
-    return result;
   });
+  return await withListEngagement(result);
 };
 
 export const updateSelfNews = async (
@@ -592,7 +506,7 @@ export const updateSelfNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
-  const update: Partial<TNews> = { ...payload };
+  const update: Partial<TNews> = applyEditorialPolicy(user, payload);
 
   if (payload.title && !payload.slug) {
     update.slug = await ensureUniqueSlug(slugify(payload.title), id);
@@ -633,17 +547,13 @@ export const updateSelfNews = async (
 
   const resultLean = result?.toObject() as TNews;
 
-  if (resultLean) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-
-    // Create a new version snapshot
-    if (update.is_edited) {
-      await ArticleVersionService.createVersion(
-        id,
-        user._id,
-        'Automatic snapshot after update',
-      );
-    }
+  // Create a new version snapshot
+  if (resultLean && update.is_edited) {
+    await ArticleVersionService.createVersion(
+      id,
+      user._id,
+      'Automatic snapshot after update',
+    );
   }
 
   return resultLean!;
@@ -721,17 +631,13 @@ export const updateNews = async (
 
   const resultLean = result?.toObject() as TNews;
 
-  if (resultLean) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-
-    // Create a new version snapshot
-    if (update.is_edited) {
-      await ArticleVersionService.createVersion(
-        id,
-        user._id,
-        'Automatic snapshot after admin update',
-      );
-    }
+  // Create a new version snapshot
+  if (resultLean && update.is_edited) {
+    await ArticleVersionService.createVersion(
+      id,
+      user._id,
+      'Automatic snapshot after admin update',
+    );
   }
 
   if (
@@ -746,7 +652,7 @@ export const updateNews = async (
     await sendNewsNotification({
       news: result._id.toString(),
       sender: user._id.toString(),
-      type: 'news-request-response',
+      type: 'news-request-approval',
     });
   }
 
@@ -772,12 +678,8 @@ export const updateSelfBulkNews = async (
 
   const result = await NewsRepository.updateMany(
     { _id: { $in: foundIds }, author: user._id },
-    { ...payload },
+    applyEditorialPolicy(user, payload),
   );
-
-  if (result.modifiedCount > 0) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
 
   return {
     count: result.modifiedCount,
@@ -803,10 +705,6 @@ export const updateBulkNews = async (
     { ...payload },
   );
 
-  if (result.modifiedCount > 0) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
-
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -823,7 +721,6 @@ export const deleteSelfNews = async (
   }
 
   await news.softDelete();
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNews = async (id: string): Promise<void> => {
@@ -833,7 +730,6 @@ export const deleteNews = async (id: string): Promise<void> => {
   }
 
   await news.softDelete();
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsPermanent = async (id: string): Promise<void> => {
@@ -945,9 +841,9 @@ export const restoreSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNews> => {
-  const news = await NewsRepository.restoreById(id);
+  const news = await NewsRepository.restoreById(id, { author: user._id });
 
-  if (!news || news.author.toString() !== user._id.toString()) {
+  if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found or not deleted');
   }
 
@@ -971,7 +867,9 @@ export const restoreSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await NewsRepository.restoreManyByIds(ids);
+  const result = await NewsRepository.restoreManyByIds(ids, {
+    author: user._id,
+  });
 
   const restoredBulkNews = await NewsRepository.findManyLean({
     _id: { $in: ids },

@@ -291,7 +291,11 @@ sequenceDiagram
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    NEXT_PUBLIC_API_URL=http://localhost:5000
    NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+   # Shared with the backend; it sends this in x-revalidate-secret when
+   # calling POST /api/revalidate after content changes.
+   REVALIDATE_SECRET=...
    ```
+   (See `.env.example`.)
 
 3. **Local Execution**:
    ```bash

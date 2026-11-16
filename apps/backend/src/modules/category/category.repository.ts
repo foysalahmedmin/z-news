@@ -110,20 +110,19 @@ export const findPublicPaginated = async (
 }> => {
   const { all = false, category, ...rest } = query;
 
-  const filter: Record<string, unknown> = {};
+  // Public lists only ever show active categories.
+  const filter: Record<string, unknown> = { status: 'active' };
   if (category) {
-    filter.status = 'active';
     filter.category = category;
   } else if (!all) {
-    filter.status = 'active';
     filter.category = { $not: { $type: 'objectId' } };
   }
 
-  const categoryQuery = new AppQueryFind(Category, { ...filter, ...rest })
+  const categoryQuery = new AppQueryFind(Category, rest, filter)
     .populate([{ path: 'children' }])
     .search(['name'])
-    .filter()
-    .sort()
+    .filter(['is_featured'])
+    .sort(['sequence', 'name', 'created_at'])
     .paginate()
     .fields()
     .tap((q) => q.lean());

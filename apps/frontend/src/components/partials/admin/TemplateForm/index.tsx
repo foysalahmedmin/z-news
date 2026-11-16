@@ -90,7 +90,7 @@ const TemplateForm = ({ mode, templateId }: TemplateFormProps) => {
   // Populate the category dropdown
   const { data: categoriesData } = useQuery({
     queryKey: ["categories", "all"],
-    queryFn: () => fetchCategories(),
+    queryFn: () => fetchCategories({ limit: 100 }),
   });
 
   const {

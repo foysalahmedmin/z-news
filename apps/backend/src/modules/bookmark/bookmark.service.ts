@@ -51,7 +51,9 @@ const getMyBookmarks = async (
   userId: string,
   query: Record<string, unknown>,
 ) => {
-  return await BookmarkRepository.findBookmarksPaginated(query, { user: userId });
+  return await BookmarkRepository.findBookmarksPaginated(query, {
+    user: userId,
+  });
 };
 
 // Get bookmark by ID
@@ -204,7 +206,7 @@ const getPublicReadingLists = async (limit: number = 20) => {
   const lists = await ReadingList.find({ is_public: true })
     .sort({ created_at: -1 })
     .limit(limit)
-    .populate('user', 'name email image')
+    .populate('user', 'name image')
     .populate({
       path: 'bookmarks',
       populate: {
@@ -219,7 +221,7 @@ const getPublicReadingLists = async (limit: number = 20) => {
 // Get reading list by ID
 const getReadingListById = async (listId: string, userId?: string) => {
   const list = await ReadingList.findById(listId)
-    .populate('user', 'name email image')
+    .populate('user', 'name image')
     .populate({
       path: 'bookmarks',
       populate: {

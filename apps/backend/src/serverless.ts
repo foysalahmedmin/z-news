@@ -1,11 +1,9 @@
 /* eslint-disable no-console */
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import * as http from 'http';
 import mongoose from 'mongoose';
 import app from './app';
 import config from './config/env';
 import { initializeRedis } from './config/redis';
-import { initializeSocket } from './config/socket';
 
 let isDbConnected = false;
 let isRedisInitialized = false;
@@ -42,12 +40,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await connectDB();
     await connectRedis();
 
-    // Optional: Initialize socket (won't persist in serverless)
-    try {
-      await initializeSocket(null as unknown as http.Server); // Serverless e socket long-living connection possible na
-    } catch (_err) {
-      console.warn('⚠️ Socket initialization skipped in serverless', _err);
-    }
+    // No socket.io here: serverless functions can't hold long-lived connections, and
+    // creating a server + Redis adapter per invocation only leaked subscriptions.
+    // emitToUser()/emitToRole() are no-ops when io is not initialized.
 
     // Let Express handle the request
     app(req as any, res as any); // eslint-disable-line @typescript-eslint/no-explicit-any

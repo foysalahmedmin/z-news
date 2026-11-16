@@ -4,7 +4,6 @@
 import NewsCommentCardSkeleton from "@/components/skeletons/cards-skeleton/NewsCommentCardSkeleton";
 import { Button } from "@/components/ui/Button";
 import { FormControl, formControlVariants } from "@/components/ui/FormControl";
-import { URLS } from "@/config";
 import { cn } from "@/lib/utils";
 import {
   addCommentReaction,
@@ -12,6 +11,7 @@ import {
   createCommentReply,
   deleteComment,
   fetchThreadedComments,
+  flagComment,
   updateComment,
 } from "@/services/comment.service";
 import { TComment } from "@/types/comment.type";
@@ -19,6 +19,7 @@ import { TNews } from "@/types/news.type";
 import { TReactionType } from "@/types/reaction.type";
 import { formatCount } from "@/utils/formatCount";
 import { formatDate } from "@/utils/formatDate";
+import { userImageUrl } from "@/utils/userImageUrl";
 import Cookies from "js-cookie";
 import {
   Check,
@@ -41,7 +42,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 const NewsCommentCard = ({
-  guest_token,
   comment,
   onUpdate,
   onDelete,
@@ -49,7 +49,6 @@ const NewsCommentCard = ({
   onReaction,
   isReply = false,
 }: {
-  guest_token?: string;
   comment: TComment;
   onUpdate: (id: string, updatedComment: TComment) => void;
   onDelete: (id: string) => void;
@@ -60,40 +59,40 @@ const NewsCommentCard = ({
   const {
     _id,
     name,
-    email,
     content,
     is_edited,
     is_pinned,
     created_at,
     user,
-    guest,
+    is_owner: isOwner = false,
     replies,
     reply_count,
     reaction_counts,
     thread_level = 0,
     status,
   } = comment || {};
-  const image = user?.image ? URLS.user + "/" + user?.image : "";
+  const image = userImageUrl(user?.image);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [editForm, setEditForm] = useState({
     name: name || "",
-    email: email || "",
+    email: "",
     content: content || "",
   });
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  const isOwner =
-    guest_token === guest || (user && Cookies.get("user") === user._id);
-
-  const createdAt = new Date(comment.created_at);
-  const now = new Date();
-  const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-
-  const isControllable = isOwner || diffHours <= 12;
+  // The API doesn't return commenter emails, but requires one on update;
+  // prefill the guest's remembered email when editing starts.
+  const handleStartEdit = () => {
+    setEditForm((prev) => ({
+      ...prev,
+      email: prev.email || Cookies.get("guest_email") || "",
+    }));
+    setIsEditing(true);
+  };
 
   const handleUpdateComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,15 +159,7 @@ const NewsCommentCard = ({
     if (!window.confirm("আপনি কি নিশ্চিত যে এই মন্তব্যটি রিপোর্ট করতে চান?"))
       return;
     try {
-      // Assuming addCommentFlag service exists or adding it inline
-      await fetch(`${URLS.api}/api/comment-enhanced/${_id}/flag`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ reason: "Reported by user" }),
-      });
+      await flagComment(_id, "Reported by user");
       alert("ধন্যবাদ, আমরা আপনার রিপোর্টটি পেয়েছি।");
     } catch (error) {
       console.error("Error flagging comment:", error);
@@ -177,11 +168,7 @@ const NewsCommentCard = ({
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditForm({
-      name: name || "",
-      email: email || "",
-      content: content || "",
-    });
+    setEditForm((prev) => ({ ...prev, name: name || "", content: content || "" }));
   };
 
   return (
@@ -273,12 +260,13 @@ const NewsCommentCard = ({
                       <Reply size={14} className="text-muted-foreground" />
                     </Button>
                   )}
-                  {isOwner && isControllable && (
+                  {/* Backend rule: owners may edit/delete their comments at any time. */}
+                  {isOwner && (
                     <>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setIsEditing(true)}
+                        onClick={handleStartEdit}
                         disabled={isLoading}
                         className="text-foreground h-8 w-8 p-0"
                       >
@@ -409,12 +397,14 @@ const NewsCommentCard = ({
                   name="name"
                   placeholder="আপনার নাম"
                   defaultValue={editForm.name}
+                  required
                 />
                 <FormControl
                   type="email"
                   name="email"
                   placeholder="আপনার ইমেইল"
                   defaultValue={editForm.email}
+                  required
                 />
                 <textarea
                   name="content"
@@ -462,7 +452,6 @@ const NewsCommentCard = ({
           {replies.map((reply) => (
             <NewsCommentCard
               key={reply._id}
-              guest_token={guest_token}
               comment={reply}
               onUpdate={onUpdate}
               onDelete={onDelete}
@@ -483,11 +472,11 @@ type NewsCommentSectionProps = {
 
 const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
   const [comments, setComments] = useState<TComment[]>([]);
+  // meta.total counts all visible comments (top-level + replies).
   const [meta, setMeta] = useState<{
     total?: number;
     limit?: number;
     page?: number;
-    guest_token?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -498,11 +487,16 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
     name: string;
   } | null>(null);
 
-  // Get saved credentials from cookies
-  const [savedName, setSavedName] = useState(Cookies.get("guest_name") || "");
-  const [savedEmail, setSavedEmail] = useState(
-    Cookies.get("guest_email") || "",
-  );
+  // Saved guest credentials, read after mount (cookies don't exist during
+  // SSR, so reading them in the initial state would mismatch on hydration).
+  const [savedName, setSavedName] = useState("");
+  const [savedEmail, setSavedEmail] = useState("");
+  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
+  useEffect(() => {
+    setSavedName(Cookies.get("guest_name") || "");
+    setSavedEmail(Cookies.get("guest_email") || "");
+    setCredentialsLoaded(true);
+  }, []);
 
   const formRef = useRef<HTMLFormElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -575,6 +569,8 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
       const { data } = result;
 
       if (data?._id) {
+        // The create response has no is_owner flag; the author is the viewer.
+        const created = { ...data, is_owner: true };
         if (replyTo) {
           // Update the parent comment with the new reply locally
           setComments((prev) =>
@@ -582,7 +578,7 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
               if (c._id === replyTo.id) {
                 return {
                   ...c,
-                  replies: [...(c.replies || []), data],
+                  replies: [...(c.replies || []), created],
                   reply_count: (c.reply_count || 0) + 1,
                 };
               }
@@ -591,9 +587,9 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
           );
           setReplyTo(null);
         } else {
-          setComments((prev) => [data, ...prev]);
-          setMeta((prev) => ({ ...prev, total: (prev.total || 0) + 1 }));
+          setComments((prev) => [created, ...prev]);
         }
+        setMeta((prev) => ({ ...prev, total: (prev.total || 0) + 1 }));
 
         // Reset only content field, keep name and email if saved
         const form = formRef.current;
@@ -639,7 +635,8 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
     updated: TComment,
   ): TComment[] => {
     return comments.map((c) => {
-      if (c._id === id) return updated;
+      // Merge: update/reaction responses lack replies and is_owner.
+      if (c._id === id) return { ...c, ...updated };
       if (c.replies && c.replies.length > 0) {
         return {
           ...c,
@@ -694,25 +691,30 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
   return (
     <div className="container mx-auto">
       <div className="bg-card rounded-md border p-6 shadow">
-        <div
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full cursor-pointer items-center justify-between gap-2"
-        >
-          <div className="flex items-center gap-2">
-            <MessageCircle size={20} />
-            <h3 className="text-xl font-bold">
+        {/* Disclosure pattern: heading wrapping a real button. */}
+        <h3 className="text-xl font-bold">
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-expanded={isOpen}
+            aria-controls="news-comments-panel"
+            className="flex w-full cursor-pointer items-center justify-between gap-2 text-left"
+          >
+            <span className="flex items-center gap-2">
+              <MessageCircle size={20} />
               মন্তব্য ({formatCount(meta?.total || 0)})
-            </h3>
-          </div>
-          <ChevronRight
-            className={cn("transition-transform duration-200", {
-              "rotate-90": isOpen,
-            })}
-            size={20}
-          />
-        </div>
+            </span>
+            <ChevronRight
+              className={cn("transition-transform duration-200", {
+                "rotate-90": isOpen,
+              })}
+              size={20}
+            />
+          </button>
+        </h3>
 
         <div
+          id="news-comments-panel"
           className={cn(
             "relative grid grid-rows-[0fr] overflow-hidden transition-[grid-template-rows] duration-300 ease-in-out",
             {
@@ -753,7 +755,9 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
                 </div>
               )}
               <div className="space-y-2">
+                {/* key: remount once the saved values are read after mount */}
                 <FormControl
+                  key={`name-${credentialsLoaded}`}
                   type="text"
                   name="name"
                   placeholder="আপনার নাম"
@@ -761,6 +765,7 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
                   required
                 />
                 <FormControl
+                  key={`email-${credentialsLoaded}`}
                   type="email"
                   name="email"
                   placeholder="আপনার ইমেইল"
@@ -841,7 +846,6 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
                   <NewsCommentCard
                     key={comment._id}
                     comment={comment}
-                    guest_token={meta?.guest_token}
                     onUpdate={handleUpdateComment}
                     onDelete={handleDeleteComment}
                     onReply={handleReplyClick}

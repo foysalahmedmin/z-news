@@ -17,33 +17,6 @@ type PollWidgetProps = {
   newsId?: string;
 };
 
-const GUEST_ID_STORAGE_KEY = "z-news_guest_id";
-
-// The poll vote endpoint (POST /api/poll/:pollId/vote) does NOT derive
-// guest identity from the httpOnly `guest_token` cookie/req.guest
-// server-side -- unlike reaction/view/comment, its controller only reads
-// `guest_id` off the request body. So anonymous voting needs a
-// client-generated id, persisted so a guest's re-vote on the same poll gets
-// rejected by the backend's own "already voted" check just like a signed-in
-// user's would.
-const getOrCreateGuestId = (): string | undefined => {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const existing = window.localStorage.getItem(GUEST_ID_STORAGE_KEY);
-    if (existing) return existing;
-
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-    window.localStorage.setItem(GUEST_ID_STORAGE_KEY, id);
-    return id;
-  } catch {
-    return undefined;
-  }
-};
-
 // `GET /api/poll/news/:newsId` never includes `has_voted` (only
 // `GET /api/poll/:pollId` computes it, and only for authenticated
 // requesters), so a local "already voted on this poll" flag is kept to
@@ -85,7 +58,8 @@ const PollWidget: React.FC<PollWidgetProps> = ({ newsId }) => {
 
   // Only used to decide whether to present this as a personalized vote vs.
   // an anonymous/guest one -- polls that allow_anonymous never hard-block
-  // voting just because the visitor isn't signed in.
+  // voting just because the visitor isn't signed in. getMyProfile makes no
+  // request for anonymous visitors.
   const { data: profileRes } = useQuery({
     queryKey: ["my-profile"],
     queryFn: getMyProfile,
@@ -102,13 +76,9 @@ const PollWidget: React.FC<PollWidgetProps> = ({ newsId }) => {
   const { mutate: submitVote, isPending: isVoting } = useMutation({
     mutationFn: () => {
       if (!poll?._id) throw new Error("No poll to vote on");
-      const payload: { option_indices: number[]; guest_id?: string } = {
-        option_indices: selected,
-      };
-      if (!isLoggedIn) {
-        payload.guest_id = getOrCreateGuestId();
-      }
-      return votePoll(poll._id, payload);
+      // The API identifies the voter from the Authorization header or, for
+      // guests, its guest cookie.
+      return votePoll(poll._id, { option_indices: selected });
     },
     onSuccess: (res) => {
       if (res?.success === false) {

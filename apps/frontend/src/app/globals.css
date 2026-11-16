@@ -45,6 +45,15 @@
   --font-noto: var(--font-noto-serif-bengali);
 
   /* animation */
+  --animate-marquee: marquee 40s linear infinite;
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
   --animate-checkbox: checkbox 0.3s ease-in-out;
   @keyframes checkbox {
     0% {
@@ -123,5 +132,4 @@
 /* Utility Styles */
 @layer utilities {
   @import "../assets/styles/utilities/loading.css";
-  @import "../assets/styles/utilities/intersection-observer.css";
 }

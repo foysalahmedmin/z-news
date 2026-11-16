@@ -70,6 +70,8 @@ export default function VideoThumbnailPlayer({
         width={width}
         height={height}
         className="aspect-video h-auto w-full rounded-md object-cover shadow"
+        sizes={`(min-width: ${width}px) ${width}px, 100vw`}
+        preload // article page LCP image for video articles
       />
       <div className="absolute inset-0 m-auto flex aspect-square h-1/3 items-center justify-center rounded-full border bg-black/25 text-white backdrop-blur-xs">
         <Play className="size-1/2" strokeWidth={2} />

@@ -1,5 +1,6 @@
 import NavigationLogo from "@/components/partials/Header/Navigation/Logo";
 import { TNews } from "@/types/news.type";
+import { formatDate } from "@/utils/formatDate";
 import { parseYouTubeUrl } from "@/utils/youtubeUrlUtils";
 import { Calendar, Edit2, Play, Tag } from "lucide-react";
 import Image from "next/image";
@@ -19,16 +20,6 @@ const NewsDetailsPrintSection: React.FC<TNewsSectionProps> = ({ news }) => {
   const thumbnail =
     news?.thumbnail?.url || thumbnails?.default || "/thumbnail.png";
 
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return "";
-    return new Date(date).toLocaleString("bn-BD", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
   return (
     <article
       id={`news-${news?._id}`}
@@ -91,7 +82,7 @@ const NewsDetailsPrintSection: React.FC<TNewsSectionProps> = ({ news }) => {
                 news?.published_at && new Date(news?.published_at).toISOString()
               }
             >
-              {formatDate(news?.published_at)}
+              {formatDate(news?.published_at, "datetime")}
             </time>
           </div>
 
@@ -136,7 +127,7 @@ const NewsDetailsPrintSection: React.FC<TNewsSectionProps> = ({ news }) => {
                 width={800}
                 height={450}
                 className="aspect-video h-auto w-full rounded-md object-cover shadow"
-                priority
+                loading="eager"
               />
               {(news?.youtube || news?.video?.url) && (
                 <div className="absolute inset-0 m-auto flex aspect-square h-1/3 items-center justify-center rounded-full border bg-black/25 text-white backdrop-blur-xs">

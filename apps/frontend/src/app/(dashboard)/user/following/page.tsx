@@ -1,6 +1,5 @@
 "use client";
 
-import { URLS } from "@/config";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import useAlert from "@/hooks/ui/useAlert";
@@ -14,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Folder, Loader2, Tag, UserMinus, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { toast } from "react-toastify";
+import { userImageUrl } from "@/utils/userImageUrl";
 
 // `/user/following` — lists the authors/categories/topics the current user
 // follows (from `getMyProfile()`) with an Unfollow action per item. Each
@@ -154,9 +154,7 @@ export default function UserFollowingPage() {
                       <div className="flex items-center gap-3">
                         <img
                           src={
-                            author.image
-                              ? `${URLS.user}/${author.image}`
-                              : "/images/avatar.png"
+                            userImageUrl(author.image) || "/images/avatar.png"
                           }
                           alt={author.name}
                           className="h-10 w-10 rounded-full object-cover"

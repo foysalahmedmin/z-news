@@ -19,11 +19,11 @@ export enum NotificationChannel {
 
 export enum NotificationType {
   NEWS_REQUEST = 'news-request',
-  NEWS_REQUEST_RESPONSE = 'news-request-response',
+  NEWS_REQUEST_APPROVAL = 'news-request-approval',
   NEWS_HEADLINE_REQUEST = 'news-headline-request',
-  NEWS_HEADLINE_REQUEST_RESPONSE = 'news-headline-request-response',
+  NEWS_HEADLINE_REQUEST_APPROVAL = 'news-headline-request-approval',
   NEWS_BREAK_REQUEST = 'news-break-request',
-  NEWS_BREAK_REQUEST_RESPONSE = 'news-break-request-response',
+  NEWS_BREAK_REQUEST_APPROVAL = 'news-break-request-approval',
   REACTION = 'reaction',
   COMMENT = 'comment',
   REPLY = 'reply',

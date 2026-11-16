@@ -18,6 +18,7 @@ import NotificationRecipientRoutes from '../modules/notification-recipient/notif
 import notificationRoutes from '../modules/notification/notification.route';
 import PollRoutes from '../modules/poll/poll.route';
 import ReactionRoutes from '../modules/reaction/reaction.route';
+import SchedulerRoutes from '../modules/scheduler/scheduler.route';
 
 import TemplateRoutes from '../modules/template/template.route';
 import UserProfileRoutes from '../modules/user-profile/user-profile.route';
@@ -124,6 +125,10 @@ const moduleRoutes = [
   {
     path: '/template',
     route: TemplateRoutes,
+  },
+  {
+    path: '/cron',
+    route: SchedulerRoutes,
   },
 ];
 

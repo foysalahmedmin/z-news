@@ -19,7 +19,7 @@ const TemplateSelector = () => {
 
   const { data: templatesData } = useQuery({
     queryKey: ["templates", { is_active: true }],
-    queryFn: () => fetchTemplates({ is_active: true }),
+    queryFn: () => fetchTemplates({ is_active: true, limit: 100 }),
   });
 
   const templates = templatesData?.data || [];

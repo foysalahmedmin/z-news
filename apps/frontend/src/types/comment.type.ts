@@ -17,10 +17,10 @@ export type TComment = {
     email?: string;
     image?: string;
   };
-  guest?: string;
   name: string;
-  email: string;
   content: string;
+  /** Computed by the API from the Authorization header or guest cookie. */
+  is_owner?: boolean;
   status?: TStatus;
   is_pinned?: boolean;
   is_edited?: boolean;

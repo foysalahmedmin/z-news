@@ -11,16 +11,14 @@ import React, { useEffect, useState } from "react";
 
 type RelatedNewsSectionProps = {
   news?: Partial<TNews>;
-  initialPage?: number;
 };
 
-const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({
-  news,
-  initialPage,
-}) => {
+const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({ news }) => {
   const { width } = useScreenSize();
 
-  const [page, setPage] = useState<number>(initialPage || 1);
+  // Pages loaded via "more". On xl screens the sidebar's SuggestionNews
+  // already shows page 1 of the same list, so this list starts at page 2.
+  const [more, setMore] = useState(0);
   const [data, setData] = useState<TNews[]>([]);
   const [meta, setMeta] = useState<{
     total?: number;
@@ -33,6 +31,8 @@ const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({
 
   useEffect(() => {
     if (!news?.category?._id) return;
+    const isXl = window.matchMedia("(min-width: 1280px)").matches;
+    const page = (isXl ? 2 : 1) + more;
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -54,7 +54,7 @@ const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({
     };
 
     fetchData();
-  }, [page]);
+  }, [more]);
 
   return (
     <>
@@ -69,7 +69,7 @@ const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({
             </div>
             <div>
               <div>
-                {isLoading && page === 1 ? (
+                {isLoading && more === 0 ? (
                   <div>
                     {Array.from({ length: 12 }).map((_, index) => (
                       <div
@@ -102,7 +102,7 @@ const RelatedNewsSection: React.FC<RelatedNewsSectionProps> = ({
                 <div className="mt-10 flex justify-center">
                   <Button
                     className="primary mx-4"
-                    onClick={() => setPage((prev) => prev + 1)}
+                    onClick={() => setMore((prev) => prev + 1)}
                     isLoading={isLoading}
                     size={"lg"}
                   >

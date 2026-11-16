@@ -74,7 +74,7 @@ export const getPublicNewsBreaks = async (
       status: 'published',
     };
 
-    const result = await NewsBreakRepository.findPaginated(rest, filter);
+    const result = await NewsBreakRepository.findPaginated(rest, filter, true);
     return result;
   });
 };

@@ -1,30 +1,24 @@
 import { ENV } from "@/config";
+import { getAuthHeaders } from "@/lib/api";
 import { Response } from "@/types/response.type";
 
-export const fetchNewsView = async (
-  news_id?: string,
-  query?: Record<string, any>,
+// Records one view of the article (as the signed-in user, or as the guest
+// identified by the API's guest cookie) and returns the view count in meta.
+export const recordNewsView = async (
+  news_id: string,
 ): Promise<Response<null>> => {
-  if (!news_id) {
-    console.error("news_id is required");
-  }
-
-  const queryString = query
-    ? `?${new URLSearchParams(query as Record<string, string>).toString()}`
-    : "";
-
-  const url = `${ENV.api_url}/api/view/news/${news_id}/self${queryString}`;
+  const url = `${ENV.api_url}/api/view/news/${news_id}/self`;
 
   const response = await fetch(url, {
-    method: "GET",
-    cache: "no-cache",
+    method: "POST",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
     return {
       data: null,
-      message: "Failed to fetch news",
+      message: "Failed to record view",
       success: false,
     };
   }

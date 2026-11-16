@@ -106,6 +106,28 @@ const NewsArticleForm = ({ mode, newsId }: NewsArticleFormProps) => {
     },
   });
 
+  // A failed token refresh hard-navigates to sign-in (lib/admin-api.ts), and
+  // closing/reloading the tab would drop edits too: ask before leaving.
+  const { isDirty } = methods.formState;
+  useEffect(() => {
+    if (!isDirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
+
+  // Admin list views that show this article (or its headline/break).
+  const invalidateNewsLists = () => {
+    for (const key of [
+      "news_articles",
+      "news-calendar",
+      "news-headlines",
+      "news-breaks",
+    ]) {
+      queryClient.invalidateQueries({ queryKey: [key] });
+    }
+  };
+
   // Reset form with fetched data (edit mode only)
   useEffect(() => {
     if (!isEdit || !newsData) return;
@@ -212,6 +234,7 @@ const NewsArticleForm = ({ mode, newsId }: NewsArticleFormProps) => {
     },
     onSuccess: (news) => {
       toast.success("News article created successfully");
+      invalidateNewsLists();
       router.push(
         news?.data?._id
           ? `/admin/news-articles/${news?.data?._id}`
@@ -307,6 +330,8 @@ const NewsArticleForm = ({ mode, newsId }: NewsArticleFormProps) => {
     onSuccess: () => {
       toast.success("News article updated successfully");
       queryClient.invalidateQueries({ queryKey: ["news", newsId] });
+      queryClient.invalidateQueries({ queryKey: ["news-versions", newsId] });
+      invalidateNewsLists();
       router.push(`/admin/news-articles/${newsId}`);
     },
     onError: () => {

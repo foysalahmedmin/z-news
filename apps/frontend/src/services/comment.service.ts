@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getAuthHeaders } from "@/lib/api";
 import { TCommentResponse, TCommentsResponse } from "@/types/comment.type";
 import { TReactionType } from "@/types/reaction.type";
 
@@ -15,6 +16,7 @@ export const fetchComments = async (
     method: "GET",
     cache: "no-cache",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -34,6 +36,7 @@ export const createComment = async (payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -47,6 +50,7 @@ export const updateComment = async (_id: string, payload: any) => {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -59,6 +63,7 @@ export const deleteComment = async (_id: string) => {
   const response = await fetch(url, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return response.json() as Promise<TCommentResponse>;
 };
@@ -72,6 +77,7 @@ export const fetchThreadedComments = async (
     method: "GET",
     cache: "no-cache",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -94,6 +100,7 @@ export const fetchCommentReplies = async (
     method: "GET",
     cache: "no-cache",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -113,6 +120,7 @@ export const createCommentReply = async (commentId: string, payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -129,6 +137,7 @@ export const addCommentReaction = async (
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify({ type }),
@@ -141,6 +150,7 @@ export const removeCommentReaction = async (commentId: string) => {
   const response = await fetch(url, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return response.json() as Promise<TCommentResponse>;
 };
@@ -150,6 +160,7 @@ export const pinComment = async (commentId: string) => {
   const response = await fetch(url, {
     method: "PATCH",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return response.json() as Promise<TCommentResponse>;
 };
@@ -159,6 +170,21 @@ export const unpinComment = async (commentId: string) => {
   const response = await fetch(url, {
     method: "PATCH",
     credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  return response.json() as Promise<TCommentResponse>;
+};
+
+export const flagComment = async (commentId: string, reason: string) => {
+  const url = `${ENV.api_url}/api/comment-enhanced/${commentId}/flag`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    credentials: "include",
+    body: JSON.stringify({ reason }),
   });
   return response.json() as Promise<TCommentResponse>;
 };

@@ -1,7 +1,7 @@
-import AnimationApplier from "@/components/appliers/AnimationApplier";
+import { ENV } from "@/config";
 import AppProviders from "@/providers/AppProviders";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Serif_Bengali } from "next/font/google";
+import { Noto_Serif_Bengali } from "next/font/google";
 import React from "react";
 import "./globals.css";
 
@@ -10,17 +10,9 @@ const noto = Noto_Serif_Bengali({
   subsets: ["bengali", "latin"],
 });
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
+  // Resolves relative OG/canonical URLs (e.g. "/thumbnail.png") to absolute ones.
+  metadataBase: new URL(ENV.app_url),
   title: "Z-News",
   description: "Z-News",
 };
@@ -71,12 +63,9 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${noto.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${noto.variable} antialiased`}
       >
         <AppProviders>{children}</AppProviders>
-
-        {/* Appliers */}
-        <AnimationApplier />
       </body>
     </html>
   );

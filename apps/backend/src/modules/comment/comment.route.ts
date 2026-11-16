@@ -54,7 +54,7 @@ router.patch(
     'guest',
   ),
   validation(CommentValidations.updateSelfCommentsValidationSchema),
-  CommentControllers.updateComments,
+  CommentControllers.updateSelfComments,
 );
 
 router.patch(
@@ -70,7 +70,7 @@ router.patch(
     'guest',
   ),
   validation(CommentValidations.updateSelfCommentValidationSchema),
-  CommentControllers.updateComment,
+  CommentControllers.updateSelfComment,
 );
 
 router.patch(

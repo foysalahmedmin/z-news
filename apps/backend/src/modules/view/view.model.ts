@@ -12,14 +12,14 @@ const viewSchema = new Schema<TViewDocument>(
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: function () {
+      required: function (this: { guest?: unknown }): boolean {
         return !this.guest;
       },
     },
 
     guest: {
       type: String,
-      required: function () {
+      required: function (this: { user?: unknown }): boolean {
         return !this.user;
       },
       default: null,
@@ -39,6 +39,9 @@ const viewSchema = new Schema<TViewDocument>(
     toObject: { virtuals: true },
   },
 );
+
+// Per-article counts ($match on news) need an index that starts with news.
+viewSchema.index({ news: 1 });
 
 viewSchema.index(
   { user: 1, news: 1 },

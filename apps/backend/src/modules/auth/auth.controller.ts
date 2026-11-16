@@ -5,18 +5,23 @@ import * as AuthServices from './auth.service';
 
 const COOKIE_NAME = 'refresh_token';
 const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;
+const IS_PROD = process.env.NODE_ENV === 'production';
+// In production the site and the API are on different sites (e.g. separate *.vercel.app hosts),
+// and a SameSite=Lax cookie is never sent on cross-site fetch, so refresh/logout would silently fail.
+// CORS (credentials + explicit origins) still stops other sites from reading the refresh response.
+const COOKIE_OPTIONS = {
+  maxAge: COOKIE_MAX_AGE,
+  httpOnly: true,
+  secure: IS_PROD,
+  sameSite: IS_PROD ? ('none' as const) : ('lax' as const),
+};
 
 export const signin = catchAsync(async (req, res) => {
   const { refresh_token, access_token, info } = await AuthServices.signin(
     req.body,
   );
 
-  res.cookie(COOKIE_NAME, refresh_token, {
-    maxAge: COOKIE_MAX_AGE,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+  res.cookie(COOKIE_NAME, refresh_token, COOKIE_OPTIONS);
 
   sendResponse(res, {
     status: httpStatus.OK,
@@ -34,12 +39,7 @@ export const googleLogin = catchAsync(async (req, res) => {
   const { refresh_token, access_token, info } =
     await AuthServices.googleLogin(id_token);
 
-  res.cookie(COOKIE_NAME, refresh_token, {
-    maxAge: COOKIE_MAX_AGE,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+  res.cookie(COOKIE_NAME, refresh_token, COOKIE_OPTIONS);
 
   sendResponse(res, {
     status: httpStatus.OK,
@@ -63,12 +63,7 @@ export const signup = catchAsync(async (req, res) => {
   const { refresh_token, access_token, info } =
     await AuthServices.signup(payload);
 
-  res.cookie(COOKIE_NAME, refresh_token, {
-    maxAge: COOKIE_MAX_AGE,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+  res.cookie(COOKIE_NAME, refresh_token, COOKIE_OPTIONS);
 
   sendResponse(res, {
     status: httpStatus.OK,
@@ -156,7 +151,7 @@ export const logout = catchAsync(async (req, res) => {
   if (token) {
     await AuthServices.logout(token);
   }
-  res.clearCookie(COOKIE_NAME);
+  res.clearCookie(COOKIE_NAME, COOKIE_OPTIONS);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

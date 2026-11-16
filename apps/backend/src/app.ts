@@ -2,7 +2,6 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Application } from 'express';
-import session from 'express-session';
 import helmet from 'helmet';
 import path from 'path';
 import config from './config';
@@ -33,10 +32,12 @@ app.use(
 
 app.use(helmet());
 
+// Exactly one reverse proxy (nginx / Vercel edge) sits in front of the app; trusting more
+// would let clients spoof X-Forwarded-For and dodge the rate limits.
+app.set('trust proxy', 1);
+
 // Apply global rate limiting
 app.use(globalRateLimiter);
-
-app.set('trust proxy', true);
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -44,27 +45,11 @@ app.use(sanitize);
 
 app.use(cookieParser());
 
-app.use(
-  session({
-    secret: config.session_secret,
-    resave: false,
-    saveUninitialized: false,
-    // store: MongoStore.create({
-    //   mongoUrl: config.database_url,
-    //   ttl: 60 * 60 * 24 * 30,
-    // }),
-    cookie: {
-      secure: config.node_env === 'production',
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 30,
-    },
-  }),
-);
-
 // Log request middleware
 app.use(log);
 
-// Static file serving for uploads
+// Static file serving for uploads. helmet() above sends X-Content-Type-Options: nosniff on
+// these responses, so an upload is never sniffed and rendered as HTML.
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API routes

@@ -59,7 +59,9 @@ const UsersPage = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["users"],
-    queryFn: () => fetchUsers({ sort: "sequence" }),
+    // shortcut: the table pages client-side over the first 100 users (API max
+    // per page); move to server-side paging when there are more.
+    queryFn: () => fetchUsers({ sort: "sequence", limit: 100 }),
   });
 
   return (
