@@ -10,6 +10,9 @@ import httpStatus from 'http-status';
 
 // ── Mock dependencies BEFORE any imports ─────────────────────────────────────
 jest.mock('../reaction.repository');
+jest.mock('../../news/news.model', () => ({
+  News: { updateOne: jest.fn().mockResolvedValue({}) },
+}));
 
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
@@ -29,6 +32,7 @@ jest.mock('../../badge/badge.service', () => ({
 import { Types } from 'mongoose';
 import { TJwtPayload } from '../../../types/jsonwebtoken.type';
 import { TGuest } from '../../guest/guest.type';
+import { News } from '../../news/news.model';
 import * as ReactionRepository from '../reaction.repository';
 import * as ReactionService from '../reaction.service';
 import { TReaction } from '../reaction.type';
@@ -75,6 +79,10 @@ describe('ReactionService.createReaction', () => {
     );
 
     expect(ReactionRepository.create).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: reaction.news },
+      { $inc: { 'stats.likes': 1 } },
+    );
     expect(result).toEqual(reaction);
   });
 
@@ -224,6 +232,10 @@ describe('ReactionService.updateSelfReaction', () => {
     );
 
     expect(result.type).toBe('dislike');
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: reaction.news },
+      { $inc: { 'stats.likes': -1, 'stats.dislikes': 1 } },
+    );
   });
 
   it('should throw NOT_FOUND if reaction does not belong to user', async () => {
@@ -252,6 +264,10 @@ describe('ReactionService.deleteSelfReaction', () => {
     );
 
     expect(ReactionRepository.findOneAndDelete).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: expect.anything() },
+      { $inc: { 'stats.likes': -1 } },
+    );
   });
 
   it('should throw NOT_FOUND if no user or guest provided', async () => {
@@ -273,6 +289,10 @@ describe('ReactionService.deleteReaction', () => {
     await ReactionService.deleteReaction('reaction-id');
 
     expect(ReactionRepository.deleteById).toHaveBeenCalledWith('reaction-id');
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: expect.anything() },
+      { $inc: { 'stats.likes': -1 } },
+    );
   });
 
   it('should throw NOT_FOUND if reaction does not exist', async () => {

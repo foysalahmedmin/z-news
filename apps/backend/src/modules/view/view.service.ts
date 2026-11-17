@@ -12,6 +12,7 @@ import { TGuest } from '../guest/guest.type';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { BadgeService } from '../badge/badge.service';
+import { News } from '../news/news.model';
 import * as ViewRepository from './view.repository';
 import { View } from './view.model';
 import { TView } from './view.type';
@@ -36,6 +37,12 @@ export const createView = async (
 
   const result = await ViewRepository.create(update);
   if (result) {
+    if (payload.news) {
+      await News.updateOne(
+        { _id: payload.news },
+        { $inc: { 'stats.views': 1 } },
+      );
+    }
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
   return result.toObject() as TView;
@@ -142,6 +149,11 @@ export const getSelfNewsView = async (
         ...(guest?.token ? { guest: guest.token } : {}),
       });
       if (created) {
+        await News.updateOne(
+          { _id: news_id },
+          { $inc: { 'stats.views': 1 } },
+        );
+
         // Only this article's count changed; never touch the news caches.
         await invalidateCache(countKey);
 
@@ -177,10 +189,16 @@ export const deleteSelfView = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  await ViewRepository.findOneAndDelete({
+  const deleted = await ViewRepository.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
+  if (deleted?.news) {
+    await News.updateOne(
+      { _id: deleted.news },
+      { $inc: { 'stats.views': -1 } },
+    );
+  }
 };
 
 export const deleteView = async (id: string): Promise<void> => {
@@ -190,6 +208,12 @@ export const deleteView = async (id: string): Promise<void> => {
   }
 
   await ViewRepository.deleteById(id);
+  if (view.news) {
+    await News.updateOne(
+      { _id: view.news },
+      { $inc: { 'stats.views': -1 } },
+    );
+  }
 };
 
 export const deleteSelfViews = async (
@@ -216,6 +240,15 @@ export const deleteSelfViews = async (
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
 
+  for (const view of views) {
+    if (view?.news) {
+      await News.updateOne(
+        { _id: view.news },
+        { $inc: { 'stats.views': -1 } },
+      );
+    }
+  }
+
   return {
     count: result.deletedCount,
     not_found_ids: notFoundIds,
@@ -233,6 +266,15 @@ export const deleteViews = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await ViewRepository.deleteMany({ _id: { $in: foundIds } });
+
+  for (const view of views) {
+    if (view?.news) {
+      await News.updateOne(
+        { _id: view.news },
+        { $inc: { 'stats.views': -1 } },
+      );
+    }
+  }
 
   return {
     count: result.deletedCount,

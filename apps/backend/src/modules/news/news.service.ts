@@ -46,17 +46,20 @@ const applyEditorialPolicy = <T extends Partial<TNews>>(
   return update;
 };
 
-// Engagement counts change on every view/reaction, so they are attached outside the
-// news cache (and never invalidate it); a short cache keeps them cheap.
+// Engagement counters (views, likes, dislikes, comments) are stored directly
+// on the article in stats and flattened here for the response shape.
 const withEngagement = async <T>(items: T[]): Promise<T[]> => {
-  const ids = items.map((item) => String((item as { _id: unknown })._id));
-  if (!ids.length) return items;
-  const counts = await withCache(
-    generateCacheKey('news-counts', [ids.join(',')]),
-    60,
-    () => NewsRepository.countEngagement(ids),
-  );
-  return items.map((item, i) => ({ ...item, ...counts[ids[i]] }));
+  return items.map((item) => {
+    const raw = item as Record<string, any>;
+    const stats = raw.stats || {};
+    return {
+      ...raw,
+      views: stats.views ?? raw.views ?? 0,
+      likes: stats.likes ?? raw.likes ?? 0,
+      dislikes: stats.dislikes ?? raw.dislikes ?? 0,
+      comments: stats.comments ?? raw.comments ?? 0,
+    } as T;
+  });
 };
 
 const PUBLIC_AUTHOR = { path: 'author', select: '_id name image' };

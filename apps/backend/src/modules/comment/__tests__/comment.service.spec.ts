@@ -10,6 +10,9 @@ import { Types } from 'mongoose';
 
 // ── Mock dependencies ─────────────────────────────────────────────────────────
 jest.mock('../comment.repository');
+jest.mock('../../news/news.model', () => ({
+  News: { updateOne: jest.fn().mockResolvedValue({}) },
+}));
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
   invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
@@ -26,6 +29,7 @@ jest.mock('../../badge/badge.service', () => ({
 
 import { TJwtPayload } from '../../../types/jsonwebtoken.type';
 import { TGuest } from '../../guest/guest.type';
+import { News } from '../../news/news.model';
 import * as CommentRepository from '../comment.repository';
 import * as CommentService from '../comment.service';
 import { TComment } from '../comment.type';
@@ -76,6 +80,10 @@ describe('CommentService.createComment', () => {
     );
 
     expect(CommentRepository.create).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': 1 } },
+    );
     expect(result).toEqual(comment);
   });
 
@@ -91,6 +99,10 @@ describe('CommentService.createComment', () => {
     );
 
     expect(CommentRepository.create).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': 1 } },
+    );
     expect(result).toEqual(comment);
   });
 
@@ -173,5 +185,45 @@ describe('CommentService.deleteCommentPermanent', () => {
       bypassDeleted: true,
     });
     expect(CommentRepository.deleteById).toHaveBeenCalledWith('id');
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: expect.anything() },
+      { $inc: { 'stats.comments': -1 } },
+    );
+  });
+});
+
+describe('CommentService.deleteComment', () => {
+  it('should soft delete comment and decrement stats.comments', async () => {
+    const comment = {
+      ...mockComment(),
+      softDelete: jest.fn().mockResolvedValue(true),
+    };
+    (CommentRepository.findById as jest.Mock).mockResolvedValue(comment);
+
+    await CommentService.deleteComment('id');
+
+    expect(comment.softDelete).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': -1 } },
+    );
+  });
+});
+
+describe('CommentService.deleteSelfComment', () => {
+  it('should soft delete self comment and decrement stats.comments', async () => {
+    const comment = {
+      ...mockComment(),
+      softDelete: jest.fn().mockResolvedValue(true),
+    };
+    (CommentRepository.findOne as jest.Mock).mockResolvedValue(comment);
+
+    await CommentService.deleteSelfComment(mockJwtPayload(), {} as TGuest, 'id');
+
+    expect(comment.softDelete).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': -1 } },
+    );
   });
 });

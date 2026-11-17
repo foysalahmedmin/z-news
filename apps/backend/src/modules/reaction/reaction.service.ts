@@ -17,6 +17,7 @@ import {
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import { News } from '../news/news.model';
 import * as ReactionRepository from './reaction.repository';
 import { TReaction } from './reaction.type';
 
@@ -46,6 +47,18 @@ export const createReaction = async (
 
   const result = await ReactionRepository.create(update);
   if (result) {
+    if (result.news) {
+      const field =
+        result.type === 'like'
+          ? 'stats.likes'
+          : result.type === 'dislike'
+            ? 'stats.dislikes'
+            : null;
+      if (field) {
+        await News.updateOne({ _id: result.news }, { $inc: { [field]: 1 } });
+      }
+    }
+
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
     // Update user activity stats
@@ -208,6 +221,15 @@ export const updateSelfReaction = async (
   const result = await ReactionRepository.updateByIdLean(id, payload);
 
   if (result) {
+    if (data.news && payload.type && payload.type !== data.type) {
+      const inc: Record<string, number> = {};
+      if (data.type === 'like') inc['stats.likes'] = -1;
+      if (data.type === 'dislike') inc['stats.dislikes'] = -1;
+      if (payload.type === 'like') inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
+      if (payload.type === 'dislike') inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
+      await News.updateOne({ _id: data.news }, { $inc: inc });
+    }
+
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
 
@@ -226,6 +248,15 @@ export const updateReaction = async (
   const result = await ReactionRepository.updateByIdLean(id, payload);
 
   if (result) {
+    if (data.news && payload.type && payload.type !== data.type) {
+      const inc: Record<string, number> = {};
+      if (data.type === 'like') inc['stats.likes'] = -1;
+      if (data.type === 'dislike') inc['stats.dislikes'] = -1;
+      if (payload.type === 'like') inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
+      if (payload.type === 'dislike') inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
+      await News.updateOne({ _id: data.news }, { $inc: inc });
+    }
+
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
 
@@ -309,6 +340,18 @@ export const deleteSelfReaction = async (
   });
 
   if (result) {
+    if (result.news) {
+      const field =
+        result.type === 'like'
+          ? 'stats.likes'
+          : result.type === 'dislike'
+            ? 'stats.dislikes'
+            : null;
+      if (field) {
+        await News.updateOne({ _id: result.news }, { $inc: { [field]: -1 } });
+      }
+    }
+
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
 };
@@ -320,6 +363,18 @@ export const deleteReaction = async (id: string): Promise<void> => {
   }
 
   await ReactionRepository.deleteById(id);
+  if (reaction.news) {
+    const field =
+      reaction.type === 'like'
+        ? 'stats.likes'
+        : reaction.type === 'dislike'
+          ? 'stats.dislikes'
+          : null;
+    if (field) {
+      await News.updateOne({ _id: reaction.news }, { $inc: { [field]: -1 } });
+    }
+  }
+
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
@@ -351,6 +406,20 @@ export const deleteSelfReactions = async (
     ...userOrGuestFilter,
   });
 
+  for (const r of reactions) {
+    if (r.news) {
+      const field =
+        r.type === 'like'
+          ? 'stats.likes'
+          : r.type === 'dislike'
+            ? 'stats.dislikes'
+            : null;
+      if (field) {
+        await News.updateOne({ _id: r.news }, { $inc: { [field]: -1 } });
+      }
+    }
+  }
+
   return {
     count: foundIds.length,
     not_found_ids: notFoundIds,
@@ -370,6 +439,20 @@ export const deleteReactions = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await ReactionRepository.deleteMany({ _id: { $in: foundIds } });
+
+  for (const r of reactions) {
+    if (r.news) {
+      const field =
+        r.type === 'like'
+          ? 'stats.likes'
+          : r.type === 'dislike'
+            ? 'stats.dislikes'
+            : null;
+      if (field) {
+        await News.updateOne({ _id: r.news }, { $inc: { [field]: -1 } });
+      }
+    }
+  }
 
   return {
     count: foundIds.length,

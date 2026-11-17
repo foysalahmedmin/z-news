@@ -4,11 +4,8 @@
  * Handles ALL direct database interactions for the News module.
  */
 
-import { PopulateOptions, Types, UpdateQuery } from 'mongoose';
+import { PopulateOptions, UpdateQuery } from 'mongoose';
 import AppQueryFind from '../../builder/app-query-find';
-import { Comment } from '../comment/comment.model';
-import { Reaction } from '../reaction/reaction.model';
-import { View } from '../view/view.model';
 import { News } from './news.model';
 import { TNews, TNewsDocument } from './news.type';
 
@@ -277,61 +274,6 @@ export const restoreManyByIds = async (
   );
 };
 
-// ─── Engagement Counts ───────────────────────────────────────────────────────
-
-/**
- * views / likes / dislikes / comments per news id, counted inside MongoDB (index-backed
- * `$group`). Replaces `count: true` virtual populates, which load every matching
- * View/Reaction/Comment document into Node just to count them.
- */
-export const countEngagement = async (
-  ids: string[],
-): Promise<
-  Record<
-    string,
-    { views: number; likes: number; dislikes: number; comments: number }
-  >
-> => {
-  const objectIds = ids.map((id) => new Types.ObjectId(id));
-  const byNews = { $match: { news: { $in: objectIds } } };
-  const [views, reactions, comments] = await Promise.all([
-    View.aggregate<{ _id: Types.ObjectId; count: number }>([
-      byNews,
-      { $group: { _id: '$news', count: { $sum: 1 } } },
-    ]),
-    Reaction.aggregate<{
-      _id: { news: Types.ObjectId; type: string };
-      count: number;
-    }>([
-      {
-        $match: {
-          news: { $in: objectIds },
-          type: { $in: ['like', 'dislike'] },
-        },
-      },
-      { $group: { _id: { news: '$news', type: '$type' }, count: { $sum: 1 } } },
-    ]),
-    Comment.aggregate<{ _id: Types.ObjectId; count: number }>([
-      { $match: { news: { $in: objectIds }, status: 'approved' } },
-      { $group: { _id: '$news', count: { $sum: 1 } } },
-    ]),
-  ]);
-
-  const counts: Record<
-    string,
-    { views: number; likes: number; dislikes: number; comments: number }
-  > = {};
-  for (const id of ids)
-    counts[id] = { views: 0, likes: 0, dislikes: 0, comments: 0 };
-  for (const v of views) counts[String(v._id)].views = v.count;
-  for (const c of comments) counts[String(c._id)].comments = c.count;
-  for (const r of reactions) {
-    const entry = counts[String(r._id.news)];
-    if (r._id.type === 'like') entry.likes = r.count;
-    else entry.dislikes = r.count;
-  }
-  return counts;
-};
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
 

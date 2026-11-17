@@ -10,6 +10,9 @@ import { Types } from 'mongoose';
 
 // ── Mock dependencies ─────────────────────────────────────────────────────────
 jest.mock('../view.repository');
+jest.mock('../../news/news.model', () => ({
+  News: { updateOne: jest.fn().mockResolvedValue({}) },
+}));
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
   invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
@@ -32,6 +35,7 @@ jest.mock('../../badge/badge.service', () => ({
 
 import { TJwtPayload } from '../../../types/jsonwebtoken.type';
 import { TGuest } from '../../guest/guest.type';
+import { News } from '../../news/news.model';
 import * as ViewRepository from '../view.repository';
 import * as ViewService from '../view.service';
 import { TView } from '../view.type';
@@ -165,6 +169,10 @@ describe('ViewService.getSelfNewsView', () => {
     );
 
     expect(ViewRepository.create).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: 'news-id' },
+      { $inc: { 'stats.views': 1 } },
+    );
     expect(result.meta.views).toBe(100);
   });
 
@@ -199,13 +207,32 @@ describe('ViewService.getSelfNewsView', () => {
 // ─── deleteSelfView ───────────────────────────────────────────────────────────
 
 describe('ViewService.deleteSelfView', () => {
-  it('should delete self view', async () => {
-    (ViewRepository.findOneAndDelete as jest.Mock).mockResolvedValue(
-      mockView(),
-    );
+  it('should delete self view and decrement stats.views', async () => {
+    const view = mockView();
+    (ViewRepository.findOneAndDelete as jest.Mock).mockResolvedValue(view);
 
     await ViewService.deleteSelfView(mockJwtPayload(), {} as TGuest, 'id');
 
     expect(ViewRepository.findOneAndDelete).toHaveBeenCalled();
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: view.news },
+      { $inc: { 'stats.views': -1 } },
+    );
+  });
+});
+
+describe('ViewService.deleteView', () => {
+  it('should delete view and decrement stats.views', async () => {
+    const view = mockView();
+    (ViewRepository.findByIdLean as jest.Mock).mockResolvedValue(view);
+    (ViewRepository.deleteById as jest.Mock).mockResolvedValue(view);
+
+    await ViewService.deleteView('id');
+
+    expect(ViewRepository.deleteById).toHaveBeenCalledWith('id');
+    expect(News.updateOne).toHaveBeenCalledWith(
+      { _id: view.news },
+      { $inc: { 'stats.views': -1 } },
+    );
   });
 });

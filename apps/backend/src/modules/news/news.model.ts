@@ -214,6 +214,14 @@ const newsSchema = new Schema<TNewsDocument>(
     scroll_depth: { type: Number, default: 0 },
     share_count: { type: Number, default: 0 },
 
+    // Engagement Counters
+    stats: {
+      views: { type: Number, default: 0 },
+      likes: { type: Number, default: 0 },
+      dislikes: { type: Number, default: 0 },
+      comments: { type: Number, default: 0 },
+    },
+
     is_deleted: {
       type: Boolean,
       default: false,

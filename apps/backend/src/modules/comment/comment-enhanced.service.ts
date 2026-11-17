@@ -5,6 +5,7 @@ import { invalidateCacheByPattern } from '../../utils/cache.utils';
 import * as ReactionRepository from '../reaction/reaction.repository';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { BadgeService } from '../badge/badge.service';
+import { News } from '../news/news.model';
 import * as UserRepository from '../user/user.repository';
 import * as CommentRepository from './comment.repository';
 import { TCommentDocument } from './comment.type';
@@ -430,6 +431,7 @@ export const moderateComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
+  const oldStatus = comment.status;
   comment.status = status;
   comment.moderated_by = moderatorId as unknown as typeof comment.moderated_by;
   comment.moderated_at = new Date();
@@ -442,6 +444,20 @@ export const moderateComment = async (
   }
 
   await comment.save();
+
+  if (comment.news) {
+    if (oldStatus !== 'approved' && status === 'approved') {
+      await News.updateOne(
+        { _id: comment.news },
+        { $inc: { 'stats.comments': 1 } },
+      );
+    } else if (oldStatus === 'approved' && status === 'rejected') {
+      await News.updateOne(
+        { _id: comment.news },
+        { $inc: { 'stats.comments': -1 } },
+      );
+    }
+  }
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 

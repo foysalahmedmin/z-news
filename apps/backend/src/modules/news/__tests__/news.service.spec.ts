@@ -24,7 +24,6 @@ jest.mock('../news.repository', () => ({
   restoreManyByIds: jest.fn(),
   deleteById: jest.fn(),
   deleteMany: jest.fn(),
-  countEngagement: jest.fn().mockResolvedValue({}),
 }));
 jest.mock('../../../utils/cache.utils', () => ({
   generateCacheKey: jest.fn(),
@@ -79,6 +78,10 @@ describe('News Service', () => {
     status: 'draft',
     content_type: 'article',
     sensitivity_level: 'public',
+    views: 0,
+    likes: 0,
+    dislikes: 0,
+    comments: 0,
     is_deleted: false,
   };
 

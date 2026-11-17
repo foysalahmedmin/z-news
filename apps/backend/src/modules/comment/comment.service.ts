@@ -9,6 +9,7 @@ import {
 import { TGuest } from '../guest/guest.type';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { BadgeService } from '../badge/badge.service';
+import { News } from '../news/news.model';
 import * as CommentRepository from './comment.repository';
 import { TComment } from './comment.type';
 
@@ -49,6 +50,13 @@ export const createComment = async (
   } as Partial<TComment>;
 
   const result = await CommentRepository.create(update);
+
+  if (result?.news && (result.status === 'approved' || !result.status)) {
+    await News.updateOne(
+      { _id: result.news },
+      { $inc: { 'stats.comments': 1 } },
+    );
+  }
 
   // Update user activity stats
   if (user?._id) {
@@ -323,6 +331,12 @@ export const deleteSelfComment = async (
   }
 
   await comment.softDelete();
+  if (comment.news && comment.status === 'approved') {
+    await News.updateOne(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': -1 } },
+    );
+  }
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
@@ -333,6 +347,12 @@ export const deleteComment = async (id: string): Promise<void> => {
   }
 
   await comment.softDelete();
+  if (comment.news && comment.status === 'approved') {
+    await News.updateOne(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': -1 } },
+    );
+  }
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
@@ -345,6 +365,12 @@ export const deleteCommentPermanent = async (id: string): Promise<void> => {
   }
 
   await CommentRepository.deleteById(id);
+  if (comment.news && comment.status === 'approved') {
+    await News.updateOne(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': -1 } },
+    );
+  }
 };
 
 export const deleteSelfComments = async (
@@ -374,6 +400,15 @@ export const deleteSelfComments = async (
     { is_deleted: true },
   );
 
+  for (const c of comments) {
+    if (c.news && c.status === 'approved') {
+      await News.updateOne(
+        { _id: c.news },
+        { $inc: { 'stats.comments': -1 } },
+      );
+    }
+  }
+
   return {
     count: foundIds.length,
     not_found_ids: notFoundIds,
@@ -394,6 +429,15 @@ export const deleteComments = async (
     { _id: { $in: foundIds } },
     { is_deleted: true },
   );
+
+  for (const c of comments) {
+    if (c.news && c.status === 'approved') {
+      await News.updateOne(
+        { _id: c.news },
+        { $inc: { 'stats.comments': -1 } },
+      );
+    }
+  }
 
   return {
     count: foundIds.length,
@@ -422,6 +466,15 @@ export const deleteCommentsPermanent = async (
     },
     { bypassDeleted: true },
   );
+
+  for (const c of comments) {
+    if (c.news && c.status === 'approved') {
+      await News.updateOne(
+        { _id: c.news },
+        { $inc: { 'stats.comments': -1 } },
+      );
+    }
+  }
 
   return {
     count: foundIds.length,
@@ -454,6 +507,13 @@ export const restoreSelfComment = async (
     );
   }
 
+  if (comment.news && comment.status === 'approved') {
+    await News.updateOne(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': 1 } },
+    );
+  }
+
   return comment;
 };
 
@@ -467,6 +527,13 @@ export const restoreComment = async (id: string): Promise<TComment> => {
     throw new AppError(
       httpStatus.NOT_FOUND,
       'Comment not found or not deleted',
+    );
+  }
+
+  if (comment.news && comment.status === 'approved') {
+    await News.updateOne(
+      { _id: comment.news },
+      { $inc: { 'stats.comments': 1 } },
     );
   }
 
@@ -503,6 +570,15 @@ export const restoreSelfComments = async (
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
+  for (const c of restoredComments) {
+    if (c.news && c.status === 'approved') {
+      await News.updateOne(
+        { _id: c.news },
+        { $inc: { 'stats.comments': 1 } },
+      );
+    }
+  }
+
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -527,6 +603,15 @@ export const restoreComments = async (
     comment._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
+
+  for (const c of restoredComments) {
+    if (c.news && c.status === 'approved') {
+      await News.updateOne(
+        { _id: c.news },
+        { $inc: { 'stats.comments': 1 } },
+      );
+    }
+  }
 
   return {
     count: result.modifiedCount,

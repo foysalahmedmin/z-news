@@ -86,6 +86,13 @@ export type TNews = {
   scroll_depth?: number;
   share_count?: number;
 
+  stats?: {
+    views?: number;
+    likes?: number;
+    dislikes?: number;
+    comments?: number;
+  };
+
   views?: number;
   likes?: number;
   dislikes?: number;
