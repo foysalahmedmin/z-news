@@ -326,7 +326,7 @@ const OperationClient = () => {
           )}
           {search && (
             <div className="inline-flex items-center gap-1 rounded bg-yellow-100 px-2 py-1 text-sm text-yellow-800">
-              "{search}"
+              &quot;{search}&quot;
               <button
                 onClick={() => updateSearchParams({ search: null })}
                 className="ml-1 text-yellow-600 hover:text-yellow-800"

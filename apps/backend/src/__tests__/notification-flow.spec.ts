@@ -27,13 +27,10 @@ jest.mock('../middlewares/rate-limit.middleware', () => ({
   globalRateLimiter: (_r: unknown, _s: unknown, next: () => void) => next(),
 }));
 jest.mock('../middlewares/file.middleware', () =>
-  jest.fn(
-    () =>
-      (req: { files?: unknown }, _res: unknown, next: () => void) => {
-        req.files = {};
-        next();
-      },
-  ),
+  jest.fn(() => (req: { files?: unknown }, _res: unknown, next: () => void) => {
+    req.files = {};
+    next();
+  }),
 );
 jest.mock('../middlewares/auth.middleware', () =>
   jest.fn(

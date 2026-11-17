@@ -38,6 +38,13 @@ export default [
     },
   },
   {
+    // TypeScript already checks for undefined variables, and types like React.* trigger false positives
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "no-undef": "off",
+    },
+  },
+  {
     // Language options for ESLint
     languageOptions: {
       ecmaVersion: 2022,

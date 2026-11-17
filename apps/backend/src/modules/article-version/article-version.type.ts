@@ -36,9 +36,7 @@ export type TArticleVersionMethods = {
 };
 
 export interface TArticleVersionDocument
-  extends Document,
-    TArticleVersion,
-    TArticleVersionMethods {}
+  extends Document, TArticleVersion, TArticleVersionMethods {}
 
 export interface TArticleVersionModel extends Model<TArticleVersionDocument> {
   isVersionExist(id: string): Promise<TArticleVersionDocument | null>;

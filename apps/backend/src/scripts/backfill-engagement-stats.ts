@@ -137,7 +137,9 @@ export const runBackfillEngagement = async (args: string[] = process.argv) => {
     updatedCount++;
   }
 
-  console.log(`[Apply] Successfully updated ${updatedCount} articles with stats.`);
+  console.log(
+    `[Apply] Successfully updated ${updatedCount} articles with stats.`,
+  );
 
   if (config.redis_enabled && !cacheClient.isOpen) {
     await cacheClient.connect();

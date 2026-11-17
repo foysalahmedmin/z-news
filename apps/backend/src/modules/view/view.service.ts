@@ -149,10 +149,7 @@ export const getSelfNewsView = async (
         ...(guest?.token ? { guest: guest.token } : {}),
       });
       if (created) {
-        await News.updateOne(
-          { _id: news_id },
-          { $inc: { 'stats.views': 1 } },
-        );
+        await News.updateOne({ _id: news_id }, { $inc: { 'stats.views': 1 } });
 
         // Only this article's count changed; never touch the news caches.
         await invalidateCache(countKey);
@@ -209,10 +206,7 @@ export const deleteView = async (id: string): Promise<void> => {
 
   await ViewRepository.deleteById(id);
   if (view.news) {
-    await News.updateOne(
-      { _id: view.news },
-      { $inc: { 'stats.views': -1 } },
-    );
+    await News.updateOne({ _id: view.news }, { $inc: { 'stats.views': -1 } });
   }
 };
 
@@ -242,10 +236,7 @@ export const deleteSelfViews = async (
 
   for (const view of views) {
     if (view?.news) {
-      await News.updateOne(
-        { _id: view.news },
-        { $inc: { 'stats.views': -1 } },
-      );
+      await News.updateOne({ _id: view.news }, { $inc: { 'stats.views': -1 } });
     }
   }
 
@@ -269,10 +260,7 @@ export const deleteViews = async (
 
   for (const view of views) {
     if (view?.news) {
-      await News.updateOne(
-        { _id: view.news },
-        { $inc: { 'stats.views': -1 } },
-      );
+      await News.updateOne({ _id: view.news }, { $inc: { 'stats.views': -1 } });
     }
   }
 

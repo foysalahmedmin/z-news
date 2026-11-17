@@ -39,7 +39,7 @@ import {
   Zap,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 const NewsCommentCard = ({
   comment,
@@ -78,19 +78,12 @@ const NewsCommentCard = ({
   const [isReplying, setIsReplying] = useState(false);
   const [editForm, setEditForm] = useState({
     name: name || "",
-    email: "",
     content: content || "",
   });
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  // The API doesn't return commenter emails, but requires one on update;
-  // prefill the guest's remembered email when editing starts.
   const handleStartEdit = () => {
-    setEditForm((prev) => ({
-      ...prev,
-      email: prev.email || Cookies.get("guest_email") || "",
-    }));
     setIsEditing(true);
   };
 
@@ -100,16 +93,14 @@ const NewsCommentCard = ({
 
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const updatedName = formData.get("name") as string;
-    const updatedEmail = formData.get("email") as string;
     const updatedContent = formData.get("content") as string;
 
-    if (!updatedName || !updatedEmail || !updatedContent) return;
+    if (!updatedName || !updatedContent) return;
 
     setIsLoading(true);
     try {
       const { data } = await updateComment(_id, {
         name: updatedName,
-        email: updatedEmail,
         content: updatedContent,
       });
 
@@ -399,13 +390,6 @@ const NewsCommentCard = ({
                   defaultValue={editForm.name}
                   required
                 />
-                <FormControl
-                  type="email"
-                  name="email"
-                  placeholder="আপনার ইমেইল"
-                  defaultValue={editForm.email}
-                  required
-                />
                 <textarea
                   name="content"
                   placeholder="আপনার মন্তব্য লিখুন..."
@@ -470,6 +454,33 @@ type NewsCommentSectionProps = {
   news?: Partial<TNews>;
 };
 
+const guestStoreListeners = new Set<() => void>();
+const subscribeGuestStore = (listener: () => void) => {
+  guestStoreListeners.add(listener);
+  return () => {
+    guestStoreListeners.delete(listener);
+  };
+};
+const notifyGuestStore = () => {
+  guestStoreListeners.forEach((l) => l());
+};
+
+let cachedGuestInfo = { name: "", email: "", loaded: false };
+const getGuestSnapshot = () => {
+  if (typeof window === "undefined") return { name: "", email: "", loaded: false };
+  const name = Cookies.get("guest_name") || "";
+  const email = Cookies.get("guest_email") || "";
+  if (
+    !cachedGuestInfo.loaded ||
+    cachedGuestInfo.name !== name ||
+    cachedGuestInfo.email !== email
+  ) {
+    cachedGuestInfo = { name, email, loaded: true };
+  }
+  return cachedGuestInfo;
+};
+const getServerGuestSnapshot = () => ({ name: "", email: "", loaded: false });
+
 const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
   const [comments, setComments] = useState<TComment[]>([]);
   // meta.total counts all visible comments (top-level + replies).
@@ -481,22 +492,24 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [saveCredentials, setSaveCredentials] = useState(false);
   const [replyTo, setReplyTo] = useState<{
     id: string;
     name: string;
   } | null>(null);
 
-  // Saved guest credentials, read after mount (cookies don't exist during
-  // SSR, so reading them in the initial state would mismatch on hydration).
-  const [savedName, setSavedName] = useState("");
-  const [savedEmail, setSavedEmail] = useState("");
-  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
-  useEffect(() => {
-    setSavedName(Cookies.get("guest_name") || "");
-    setSavedEmail(Cookies.get("guest_email") || "");
-    setCredentialsLoaded(true);
-  }, []);
+  // Saved guest credentials, read without hydration mismatch or cascading renders
+  const { name: savedName, email: savedEmail, loaded: credentialsLoaded } =
+    useSyncExternalStore(
+      subscribeGuestStore,
+      getGuestSnapshot,
+      getServerGuestSnapshot,
+    );
+
+  const [customSaveCredentials, setCustomSaveCredentials] = useState<boolean | null>(null);
+  const saveCredentials =
+    customSaveCredentials !== null
+      ? customSaveCredentials
+      : Boolean(savedName || savedEmail);
 
   const formRef = useRef<HTMLFormElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -521,13 +534,6 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
     }
   }, [news?._id]);
 
-  // Set saveCredentials checkbox if credentials exist
-  useEffect(() => {
-    if (savedName || savedEmail) {
-      setSaveCredentials(true);
-    }
-  }, [savedName, savedEmail]);
-
   // Submit new comment or reply
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -544,8 +550,7 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
     if (saveCredentials) {
       Cookies.set("guest_name", name, { expires: 365 }); // Save for 1 year
       Cookies.set("guest_email", email, { expires: 365 });
-      setSavedName(name);
-      setSavedEmail(email);
+      notifyGuestStore();
     }
 
     setIsSubmitting(true);
@@ -615,16 +620,11 @@ const NewsCommentSection: React.FC<NewsCommentSectionProps> = ({ news }) => {
 
   // Clear saved credentials
   const handleToggleCredentials = (bool: boolean) => {
-    if (bool) {
-      setSaveCredentials(true);
-    } else {
-      setSaveCredentials(false);
-      if (savedEmail || savedName) {
-        Cookies.remove("guest_name");
-        Cookies.remove("guest_email");
-        setSavedName("");
-        setSavedEmail("");
-      }
+    setCustomSaveCredentials(bool);
+    if (!bool && (savedEmail || savedName)) {
+      Cookies.remove("guest_name");
+      Cookies.remove("guest_email");
+      notifyGuestStore();
     }
   };
 

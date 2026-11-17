@@ -218,7 +218,11 @@ describe('CommentService.deleteSelfComment', () => {
     };
     (CommentRepository.findOne as jest.Mock).mockResolvedValue(comment);
 
-    await CommentService.deleteSelfComment(mockJwtPayload(), {} as TGuest, 'id');
+    await CommentService.deleteSelfComment(
+      mockJwtPayload(),
+      {} as TGuest,
+      'id',
+    );
 
     expect(comment.softDelete).toHaveBeenCalled();
     expect(News.updateOne).toHaveBeenCalledWith(

@@ -274,7 +274,6 @@ export const restoreManyByIds = async (
   );
 };
 
-
 // ─── Delete ──────────────────────────────────────────────────────────────────
 
 export const deleteById = async (id: string): Promise<TNewsDocument | null> => {

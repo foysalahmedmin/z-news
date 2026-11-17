@@ -24,13 +24,10 @@ jest.mock('../middlewares/rate-limit.middleware', () => ({
   globalRateLimiter: (_r: unknown, _s: unknown, next: () => void) => next(),
 }));
 jest.mock('../middlewares/file.middleware', () =>
-  jest.fn(
-    () =>
-      (req: { files?: unknown }, _res: unknown, next: () => void) => {
-        req.files = {};
-        next();
-      },
-  ),
+  jest.fn(() => (req: { files?: unknown }, _res: unknown, next: () => void) => {
+    req.files = {};
+    next();
+  }),
 );
 
 import * as AuthService from '../modules/auth/auth.service';
@@ -41,7 +38,11 @@ const agent = supertest(app);
 const mockTokens = {
   access_token: 'mock.access.token',
   refresh_token: 'mock.refresh.token',
-  info: { _id: '507f1f77bcf86cd799439011', role: 'user', email: 'test@example.com' },
+  info: {
+    _id: '507f1f77bcf86cd799439011',
+    role: 'user',
+    email: 'test@example.com',
+  },
 };
 
 describe('Auth Flow Integration', () => {

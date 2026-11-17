@@ -44,17 +44,15 @@ export const runScheduledJobs = async (): Promise<{
   if (config.redis_enabled && cacheClient?.isOpen) {
     try {
       lockId = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-      const acquired = await cacheClient.set(
-        SCHEDULER_LOCK_KEY,
-        lockId,
-        {
-          NX: true,
-          PX: SCHEDULER_LOCK_TTL_MS,
-        },
-      );
+      const acquired = await cacheClient.set(SCHEDULER_LOCK_KEY, lockId, {
+        NX: true,
+        PX: SCHEDULER_LOCK_TTL_MS,
+      });
 
       if (!acquired) {
-        console.log('[Scheduler] Another instance holds the lock, skipping tick.');
+        console.log(
+          '[Scheduler] Another instance holds the lock, skipping tick.',
+        );
         return { published: 0, archived: 0, skipped: true };
       }
       hasLock = true;

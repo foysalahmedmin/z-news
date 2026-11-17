@@ -1,10 +1,7 @@
 import { Document, Model, Types } from 'mongoose';
 
 export type TWorkflowStageStatus =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'skipped';
+  'pending' | 'approved' | 'rejected' | 'skipped';
 export type TWorkflowPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export type TWorkflowStage = {

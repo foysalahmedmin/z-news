@@ -50,7 +50,13 @@ const applyEditorialPolicy = <T extends Partial<TNews>>(
 // on the article in stats and flattened here for the response shape.
 const withEngagement = async <T>(items: T[]): Promise<T[]> => {
   return items.map((item) => {
-    const raw = item as Record<string, any>;
+    const raw = item as Record<string, unknown> & {
+      stats?: Record<string, number>;
+      views?: number;
+      likes?: number;
+      dislikes?: number;
+      comments?: number;
+    };
     const stats = raw.stats || {};
     return {
       ...raw,

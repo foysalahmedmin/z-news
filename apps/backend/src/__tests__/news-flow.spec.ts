@@ -50,13 +50,10 @@ jest.mock('../middlewares/guest.middleware', () =>
   jest.fn(() => (_req: unknown, _res: unknown, next: () => void) => next()),
 );
 jest.mock('../middlewares/file.middleware', () =>
-  jest.fn(
-    () =>
-      (req: { files?: unknown }, _res: unknown, next: () => void) => {
-        req.files = {};
-        next();
-      },
-  ),
+  jest.fn(() => (req: { files?: unknown }, _res: unknown, next: () => void) => {
+    req.files = {};
+    next();
+  }),
 );
 
 import * as NewsService from '../modules/news/news.service';

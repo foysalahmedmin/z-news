@@ -225,8 +225,10 @@ export const updateSelfReaction = async (
       const inc: Record<string, number> = {};
       if (data.type === 'like') inc['stats.likes'] = -1;
       if (data.type === 'dislike') inc['stats.dislikes'] = -1;
-      if (payload.type === 'like') inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
-      if (payload.type === 'dislike') inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
+      if (payload.type === 'like')
+        inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
+      if (payload.type === 'dislike')
+        inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
       await News.updateOne({ _id: data.news }, { $inc: inc });
     }
 
@@ -252,8 +254,10 @@ export const updateReaction = async (
       const inc: Record<string, number> = {};
       if (data.type === 'like') inc['stats.likes'] = -1;
       if (data.type === 'dislike') inc['stats.dislikes'] = -1;
-      if (payload.type === 'like') inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
-      if (payload.type === 'dislike') inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
+      if (payload.type === 'like')
+        inc['stats.likes'] = (inc['stats.likes'] || 0) + 1;
+      if (payload.type === 'dislike')
+        inc['stats.dislikes'] = (inc['stats.dislikes'] || 0) + 1;
       await News.updateOne({ _id: data.news }, { $inc: inc });
     }
 

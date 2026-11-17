@@ -88,22 +88,22 @@ const getRecentActivity = async (
   ]);
 
   const activity: TRecentActivityItem[] = [
-    ...recentNews.map((n: any) => ({
+    ...recentNews.map((n) => ({
       type: 'news_published' as const,
       title: n.title,
-      date: n.published_at,
+      date: n.published_at || new Date(),
       link: `/news/${n.slug}`,
     })),
-    ...recentComments.map((c: any) => ({
+    ...recentComments.map((c) => ({
       type: 'comment_posted' as const,
       title: typeof c.content === 'string' ? c.content.slice(0, 80) : 'Comment',
-      actor: c.user?.name || 'Guest',
-      date: c.created_at,
+      actor: (c.user as { name?: string } | null)?.name || 'Guest',
+      date: c.created_at || new Date(),
     })),
-    ...recentUsers.map((u: any) => ({
+    ...recentUsers.map((u) => ({
       type: 'user_signup' as const,
       title: u.name,
-      date: u.created_at,
+      date: u.created_at || new Date(),
     })),
   ];
 
@@ -267,8 +267,15 @@ const getMyContentPerformance = async (
     total_comments: commentCount,
     total_reactions: reactionCount,
     view_trend: viewTrend,
-    top_articles: topArticles.map((a: any) => ({
-      _id: a._id,
+    top_articles: (
+      topArticles as Array<{
+        _id: mongoose.Types.ObjectId | string;
+        title: string;
+        slug: string;
+        view_count: number;
+      }>
+    ).map((a) => ({
+      _id: String(a._id),
       title: a.title,
       slug: a.slug,
       view_count: a.view_count,

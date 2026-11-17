@@ -1,18 +1,10 @@
 import { Document, Model, Types } from 'mongoose';
 
 export type TStatus =
-  | 'draft'
-  | 'pending'
-  | 'scheduled'
-  | 'published'
-  | 'archived';
+  'draft' | 'pending' | 'scheduled' | 'published' | 'archived';
 
 export type TContentType =
-  | 'article'
-  | 'video'
-  | 'podcast'
-  | 'live-blog'
-  | 'photo-essay';
+  'article' | 'video' | 'podcast' | 'live-blog' | 'photo-essay';
 
 export type TSensitivityLevel = 'public' | 'sensitive' | 'restricted';
 

@@ -67,7 +67,9 @@ export const runClearDefaultExpiry = async (args: string[] = process.argv) => {
       News.find(archivedFilter, { slug: 1 }).limit(20).lean(),
     ]);
 
-  console.log(`Found ${publishedCount} published articles with default 24h expiry.`);
+  console.log(
+    `Found ${publishedCount} published articles with default 24h expiry.`,
+  );
   if (publishedSamples.length > 0) {
     console.log(
       `Sample published slugs (up to 20):`,

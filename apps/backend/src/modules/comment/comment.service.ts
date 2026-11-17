@@ -402,10 +402,7 @@ export const deleteSelfComments = async (
 
   for (const c of comments) {
     if (c.news && c.status === 'approved') {
-      await News.updateOne(
-        { _id: c.news },
-        { $inc: { 'stats.comments': -1 } },
-      );
+      await News.updateOne({ _id: c.news }, { $inc: { 'stats.comments': -1 } });
     }
   }
 
@@ -432,10 +429,7 @@ export const deleteComments = async (
 
   for (const c of comments) {
     if (c.news && c.status === 'approved') {
-      await News.updateOne(
-        { _id: c.news },
-        { $inc: { 'stats.comments': -1 } },
-      );
+      await News.updateOne({ _id: c.news }, { $inc: { 'stats.comments': -1 } });
     }
   }
 
@@ -469,10 +463,7 @@ export const deleteCommentsPermanent = async (
 
   for (const c of comments) {
     if (c.news && c.status === 'approved') {
-      await News.updateOne(
-        { _id: c.news },
-        { $inc: { 'stats.comments': -1 } },
-      );
+      await News.updateOne({ _id: c.news }, { $inc: { 'stats.comments': -1 } });
     }
   }
 
@@ -572,10 +563,7 @@ export const restoreSelfComments = async (
 
   for (const c of restoredComments) {
     if (c.news && c.status === 'approved') {
-      await News.updateOne(
-        { _id: c.news },
-        { $inc: { 'stats.comments': 1 } },
-      );
+      await News.updateOne({ _id: c.news }, { $inc: { 'stats.comments': 1 } });
     }
   }
 
@@ -606,10 +594,7 @@ export const restoreComments = async (
 
   for (const c of restoredComments) {
     if (c.news && c.status === 'approved') {
-      await News.updateOne(
-        { _id: c.news },
-        { $inc: { 'stats.comments': 1 } },
-      );
+      await News.updateOne({ _id: c.news }, { $inc: { 'stats.comments': 1 } });
     }
   }
 

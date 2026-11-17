@@ -1,13 +1,7 @@
 import { Document, Model, Types } from 'mongoose';
 
 export type TFileType =
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'file'
-  | 'pdf'
-  | 'doc'
-  | 'txt';
+  'image' | 'video' | 'audio' | 'file' | 'pdf' | 'doc' | 'txt';
 
 export type TFileStatus = 'active' | 'inactive' | 'archived';
 

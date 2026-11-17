@@ -1,12 +1,7 @@
 import { UserRole } from '../enums/user-role.enum';
 
 type TPermission =
-  | 'read'
-  | 'write'
-  | 'update'
-  | 'delete'
-  | 'publish'
-  | 'manage';
+  'read' | 'write' | 'update' | 'delete' | 'publish' | 'manage';
 type TResource =
   | 'news'
   | 'category'

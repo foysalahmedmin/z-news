@@ -144,11 +144,16 @@ describe('Bookmark Service', () => {
         data: [mockBookmark],
         meta: { total: 1, page: 1, limit: 10, total_pages: 1 },
       };
-      (BookmarkRepository.findBookmarksPaginated as jest.Mock).mockResolvedValue(mockPaginated);
+      (
+        BookmarkRepository.findBookmarksPaginated as jest.Mock
+      ).mockResolvedValue(mockPaginated);
 
       const result = await BookmarkService.getMyBookmarks(mockUserId, {});
 
-      expect(BookmarkRepository.findBookmarksPaginated).toHaveBeenCalledWith({}, { user: mockUserId });
+      expect(BookmarkRepository.findBookmarksPaginated).toHaveBeenCalledWith(
+        {},
+        { user: mockUserId },
+      );
       expect(result).toEqual(mockPaginated);
     });
   });

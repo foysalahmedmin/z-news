@@ -6,11 +6,7 @@ export type TBadge = {
   description: string;
   icon: string;
   category:
-    | 'reader'
-    | 'engagement'
-    | 'loyalty'
-    | 'contribution'
-    | 'achievement';
+    'reader' | 'engagement' | 'loyalty' | 'contribution' | 'achievement';
   criteria: {
     type:
       | 'articles_read'

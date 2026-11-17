@@ -25,8 +25,7 @@ export type TNotificationRecipient = {
 };
 
 export interface TNotificationRecipientDocument
-  extends TNotificationRecipient,
-    Document {
+  extends TNotificationRecipient, Document {
   _id: Types.ObjectId;
   softDelete(): Promise<TNotificationRecipientDocument | null>;
 }
