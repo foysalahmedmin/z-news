@@ -33,8 +33,9 @@ export const updateSelfCommentValidationSchema = z.object({
       .string()
       .trim()
       .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name cannot exceed 50 characters'),
-    email: z.string().email('Invalid email format'),
+      .max(50, 'Name cannot exceed 50 characters')
+      .optional(),
+    email: z.string().email('Invalid email format').optional(),
     content: z
       .string()
       .trim()
