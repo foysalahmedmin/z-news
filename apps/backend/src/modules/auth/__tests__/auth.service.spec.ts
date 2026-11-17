@@ -10,6 +10,12 @@ import httpStatus from 'http-status';
 
 // ── Mock repository before importing service ──────────────────────────────────
 jest.mock('../auth.repository');
+jest.mock('../revoked-token.model', () => ({
+  RevokedToken: {
+    exists: jest.fn().mockResolvedValue(null),
+    updateOne: jest.fn().mockResolvedValue({}),
+  },
+}));
 jest.mock('../../../utils/send-email', () => ({ sendEmail: jest.fn() }));
 
 // ── Mock bcrypt ───────────────────────────────────────────────────────────────
@@ -46,6 +52,7 @@ import bcrypt from 'bcrypt';
 import * as AuthRepository from '../auth.repository';
 import * as AuthService from '../auth.service';
 import { verifyToken } from '../auth.util';
+import { RevokedToken } from '../revoked-token.model';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -224,6 +231,42 @@ describe('AuthService.refreshToken', () => {
     await expect(AuthService.refreshToken('token')).rejects.toMatchObject({
       status: httpStatus.NOT_FOUND,
     });
+  });
+
+  it('should throw 401 when token exists in RevokedToken collection (without Redis)', async () => {
+    (RevokedToken.exists as jest.Mock).mockResolvedValueOnce(true);
+
+    await expect(
+      AuthService.refreshToken('revoked_token_in_mongo'),
+    ).rejects.toMatchObject({
+      status: httpStatus.UNAUTHORIZED,
+      message: 'Token has been revoked. Please login again.',
+    });
+  });
+});
+
+// ─── logout ───────────────────────────────────────────────────────────────────
+
+describe('AuthService.logout', () => {
+  it('should persist revoked token in RevokedToken model with expiration date', async () => {
+    const futureExp = Math.floor(Date.now() / 1000) + 3600;
+    (verifyToken as jest.Mock).mockReturnValue({
+      email: 'john@example.com',
+      exp: futureExp,
+    });
+
+    await AuthService.logout('valid_refresh_token');
+
+    expect(RevokedToken.updateOne).toHaveBeenCalledWith(
+      { token: 'valid_refresh_token' },
+      {
+        $setOnInsert: {
+          token: 'valid_refresh_token',
+          expires_at: new Date(futureExp * 1000),
+        },
+      },
+      { upsert: true },
+    );
   });
 });
 

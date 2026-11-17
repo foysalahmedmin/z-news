@@ -10,6 +10,7 @@ import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
+import { RevokedToken } from './revoked-token.model';
 import AppError from '../../builder/app-error';
 import config from '../../config';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
@@ -170,8 +171,20 @@ export const signup = async (payload: TSignup) => {
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 
 export const refreshToken = async (token: string) => {
-  const blacklisted = await getCache(`auth:blacklist:${token}`);
-  if (blacklisted) {
+  let isRevoked = false;
+  if (config.redis_enabled) {
+    const blacklisted = await getCache(`auth:blacklist:${token}`).catch(
+      () => null,
+    );
+    if (blacklisted) isRevoked = true;
+  }
+
+  if (!isRevoked) {
+    const revokedInDb = await RevokedToken.exists({ token });
+    if (revokedInDb) isRevoked = true;
+  }
+
+  if (isRevoked) {
     throw new AppError(
       httpStatus.UNAUTHORIZED,
       'Token has been revoked. Please login again.',
@@ -388,9 +401,21 @@ export const logout = async (refreshToken: string) => {
       config.jwt_refresh_secret!,
     ) as JwtPayload;
     if (decoded?.exp) {
+      const expiresAt = new Date(decoded.exp * 1000);
       const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+
       if (ttl > 0) {
-        await setCache(`auth:blacklist:${refreshToken}`, '1', ttl);
+        if (config.redis_enabled) {
+          await setCache(`auth:blacklist:${refreshToken}`, '1', ttl).catch(
+            () => {},
+          );
+        }
+
+        await RevokedToken.updateOne(
+          { token: refreshToken },
+          { $setOnInsert: { token: refreshToken, expires_at: expiresAt } },
+          { upsert: true },
+        ).catch(() => {});
       }
     }
   } catch {
