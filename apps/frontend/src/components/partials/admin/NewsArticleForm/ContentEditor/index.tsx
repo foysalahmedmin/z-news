@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import dynamic from "next/dynamic";
+import { useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import type { NewsFormData } from "../schema";
 
@@ -25,18 +26,39 @@ const ContentEditor = () => {
   } = useFormContext<NewsFormData>();
 
   const contentValue = watch("content");
+  const isUserInteractedRef = useRef(false);
 
   return (
     <Card>
       <CardHeader className="border-b">
         <CardTitle>Content *</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent
+        onKeyDownCapture={() => {
+          isUserInteractedRef.current = true;
+        }}
+        onInputCapture={() => {
+          isUserInteractedRef.current = true;
+        }}
+        onPasteCapture={() => {
+          isUserInteractedRef.current = true;
+        }}
+        onDropCapture={() => {
+          isUserInteractedRef.current = true;
+        }}
+        onPointerDownCapture={() => {
+          isUserInteractedRef.current = true;
+        }}
+      >
         <RichTextEditor
           value={contentValue}
           onChange={(html) => {
             // shouldDirty: drives the unsaved-changes guard in the form.
-            setValue("content", html, { shouldDirty: true });
+            // On load, BlockNote may re-emit normalized HTML without real user input;
+            // only mark dirty when user has interacted with the editor.
+            setValue("content", html, {
+              shouldDirty: isUserInteractedRef.current,
+            });
           }}
           error={errors.content?.message}
           uploadFileCategory="news-content"

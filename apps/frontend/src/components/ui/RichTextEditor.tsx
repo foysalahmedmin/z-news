@@ -11,7 +11,7 @@ import {
   SuggestionMenuController,
   useCreateBlockNote,
 } from "@blocknote/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import FileSelectionModal from "@/components/modals/FileSelectionModal";
 import { Button } from "@/components/ui/Button";
@@ -164,6 +164,7 @@ const RichTextEditor = ({
   );
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
+  const isProgrammaticSyncRef = useRef(false);
 
   // Create editor
   const blockNoteEditor = useCreateBlockNote({
@@ -486,8 +487,12 @@ const RichTextEditor = ({
         .blocksToHTMLLossy(blockNoteEditor.document)
         .then((currentHtml) => {
           if (currentHtml !== value) {
+            isProgrammaticSyncRef.current = true;
             blockNoteEditor.tryParseHTMLToBlocks(value).then((blocks) => {
               blockNoteEditor.replaceBlocks(blockNoteEditor.document, blocks);
+              setTimeout(() => {
+                isProgrammaticSyncRef.current = false;
+              }, 100);
             });
           }
         });
@@ -537,6 +542,9 @@ const RichTextEditor = ({
           editor={blockNoteEditor}
           slashMenu={false}
           onChange={() => {
+            if (isProgrammaticSyncRef.current) {
+              return;
+            }
             blockNoteEditor
               .blocksToHTMLLossy(blockNoteEditor.document)
               .then((html) => {
