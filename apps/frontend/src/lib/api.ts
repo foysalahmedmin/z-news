@@ -1,5 +1,4 @@
 import { ENV } from "@/config";
-import type { TUserState } from "@/types/state.type";
 import { getCookie, setCookie } from "cookies-next/client";
 
 // Module-level in-memory storage for the access token. Never stored in document.cookie.
@@ -373,7 +372,8 @@ export const getUserCookieOptions = () => ({
   path: "/",
   maxAge: USER_COOKIE_MAX_AGE,
   sameSite: "lax" as const,
-  secure: typeof window !== "undefined" && window.location.protocol === "https:",
+  secure:
+    typeof window !== "undefined" && window.location.protocol === "https:",
 });
 
 // Authorization header for the signed-in user, read from the in-memory access token.

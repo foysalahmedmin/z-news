@@ -1,6 +1,6 @@
 import { ENV } from "@/config";
 import { getInternalHeaders } from "@/lib/api";
-import {
+import type {
   TBulkNewsBreakResponse,
   TNewsBreakResponse,
 } from "@/types/news-break.type";
