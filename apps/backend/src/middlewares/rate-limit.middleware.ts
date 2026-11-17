@@ -1,10 +1,25 @@
+import crypto from 'crypto';
 import { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import config from '../config/env';
 
 export const rateLimiter = rateLimit;
 
-const skipServerRequests = (req: Request): boolean => {
+export const skipServerRequests = (req: Request): boolean => {
+  const secret = config.internal_api_secret || process.env.INTERNAL_API_SECRET;
+  const header = req.headers['x-internal-secret'];
+
+  if (secret && typeof header === 'string') {
+    const expected = Buffer.from(secret);
+    const received = Buffer.from(header);
+    if (
+      expected.length === received.length &&
+      crypto.timingSafeEqual(expected, received)
+    ) {
+      return true;
+    }
+  }
+
   const serverApiKey = req.headers['x-server-api-key'];
   return !!(
     serverApiKey &&

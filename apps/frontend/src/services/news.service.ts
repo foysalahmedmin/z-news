@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getInternalHeaders } from "@/lib/api";
 import { TBulkNewsResponse, TNewsResponse } from "@/types/news.type";
 
 // Public data is cached for 5 min and also expired on demand by the backend
@@ -21,7 +22,11 @@ export const fetchNews = async (
 
   const url = `${ENV.api_url}/api/news/${encodeURIComponent(slug)}/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: NEWS_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: NEWS_CACHE,
+  });
 
   if (response.status === 404) {
     return { data: null, message: "News not found", success: false } as any;
@@ -43,7 +48,11 @@ export const fetchBulkNews = async (
 
     const url = `${ENV.api_url}/api/news/public${queryString}`;
 
-    const response = await fetch(url, { method: "GET", next: NEWS_CACHE });
+    const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: NEWS_CACHE,
+  });
 
     if (!response.ok) {
       return {

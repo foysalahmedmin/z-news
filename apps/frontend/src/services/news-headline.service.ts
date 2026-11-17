@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getInternalHeaders } from "@/lib/api";
 import {
   TBulkNewsHeadlineResponse,
   TNewsHeadlineResponse,
@@ -17,7 +18,11 @@ export const fetchNewsHeadline = async (
 
   const url = `${ENV.api_url}/api/news-headline/${id}/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: HEADLINE_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: HEADLINE_CACHE,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch news headline");
@@ -35,7 +40,11 @@ export const fetchBulkNewsHeadlines = async (
 
   const url = `${ENV.api_url}/api/news-headline/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: HEADLINE_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: HEADLINE_CACHE,
+  });
 
   if (!response.ok) {
     return {

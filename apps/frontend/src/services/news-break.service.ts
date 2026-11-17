@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getInternalHeaders } from "@/lib/api";
 import {
   TBulkNewsBreakResponse,
   TNewsBreakResponse,
@@ -17,7 +18,11 @@ export const fetchNewsBreak = async (
 
   const url = `${ENV.api_url}/api/news-break/${id}/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: BREAK_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: BREAK_CACHE,
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch news break");
@@ -35,7 +40,11 @@ export const fetchBulkNewsBreaks = async (
 
   const url = `${ENV.api_url}/api/news-break/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: BREAK_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: BREAK_CACHE,
+  });
 
   if (!response.ok) {
     return {

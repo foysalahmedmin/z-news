@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getInternalHeaders } from "@/lib/api";
 import { TEventResponse, TEventsResponse } from "@/types/event.type";
 
 // 5 min + on-demand expiry via the "events" tag (app/api/revalidate).
@@ -16,7 +17,11 @@ export async function fetchEvent(
 
   const url = `${ENV.api_url}/api/event/${encodeURIComponent(slug)}/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: EVENT_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: EVENT_CACHE,
+  });
 
   if (response.status === 404) {
     return { data: null, message: "Event not found", success: false } as any;
@@ -38,7 +43,11 @@ export async function fetchEvents(
 
     const url = `${ENV.api_url}/api/event/public${queryString}`;
 
-    const response = await fetch(url, { method: "GET", next: EVENT_CACHE });
+    const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: EVENT_CACHE,
+  });
 
     if (!response.ok) {
       return { data: [], message: "Failed to fetch events", success: false };

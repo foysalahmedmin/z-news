@@ -1,4 +1,5 @@
 import { ENV } from "@/config";
+import { getInternalHeaders } from "@/lib/api";
 import { TCategoriesResponse, TCategoryResponse } from "@/types/category.type";
 
 // 5 min + on-demand expiry via the "categories" tag (app/api/revalidate).
@@ -16,7 +17,11 @@ export async function fetchCategory(
 
   const url = `${ENV.api_url}/api/category/${encodeURIComponent(slug)}/public${queryString}`;
 
-  const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getInternalHeaders(),
+    next: CATEGORY_CACHE,
+  });
 
   if (response.status === 404) {
     return { data: null, message: "Category not found", success: false } as any;
@@ -38,7 +43,11 @@ export async function fetchCategories(
 
     const url = `${ENV.api_url}/api/category/public${queryString}`;
 
-    const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getInternalHeaders(),
+      next: CATEGORY_CACHE,
+    });
 
     if (!response.ok) {
       return {
@@ -64,7 +73,11 @@ export async function fetchCategoriesTree(
 
     const url = `${ENV.api_url}/api/category/tree/public${queryString}`;
 
-    const response = await fetch(url, { method: "GET", next: CATEGORY_CACHE });
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getInternalHeaders(),
+      next: CATEGORY_CACHE,
+    });
 
     if (!response.ok) {
       return {

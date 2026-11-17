@@ -377,6 +377,14 @@ export const getUserCookieOptions = () => ({
 });
 
 // Authorization header for the signed-in user, read from the in-memory access token.
+// Server-only header for internal requests bypassing the rate limiter.
+export const getInternalHeaders = (): Record<string, string> => {
+  if (typeof window === "undefined" && process.env.INTERNAL_API_SECRET) {
+    return { "x-internal-secret": process.env.INTERNAL_API_SECRET };
+  }
+  return {};
+};
+
 // Client-side only: on the server renders are always anonymous.
 export const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === "undefined") {
@@ -404,15 +412,10 @@ api.interceptors.request.use(async (config) => {
     ? { Authorization: token }
     : {};
 
-  const internalSecretHeader: Record<string, string> =
-    typeof window === "undefined" && process.env.INTERNAL_API_SECRET
-      ? { "x-internal-secret": process.env.INTERNAL_API_SECRET }
-      : {};
-
   config.options.headers = {
     ...config.options.headers,
     ...authHeaders,
-    ...internalSecretHeader,
+    ...getInternalHeaders(),
   };
   return config;
 });
