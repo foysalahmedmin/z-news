@@ -12,7 +12,6 @@ const userProfileSchema = new Schema<TUserProfileDocument>(
       ref: 'User',
       required: [true, 'User reference is required'],
       unique: true,
-      index: true,
     },
     bio: {
       type: String,
@@ -166,7 +165,6 @@ const userProfileSchema = new Schema<TUserProfileDocument>(
 );
 
 // Indexes
-userProfileSchema.index({ user: 1 }, { unique: true });
 userProfileSchema.index({ reputation_score: -1 });
 userProfileSchema.index({ is_verified_reader: 1 });
 userProfileSchema.index({ is_premium: 1 });

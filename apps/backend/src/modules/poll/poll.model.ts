@@ -6,14 +6,12 @@ const pollSchema = new Schema<TPollDocument>(
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',
-      index: true,
     },
 
     created_by: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Creator is required'],
-      index: true,
     },
 
     title: {

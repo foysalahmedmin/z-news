@@ -15,7 +15,6 @@ const bookmarkSchema = new Schema<TBookmarkDocument>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'User reference is required'],
-      index: true,
     },
     news: {
       type: Schema.Types.ObjectId,
@@ -122,7 +121,6 @@ const readingListSchema = new Schema<TReadingListDocument>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'User reference is required'],
-      index: true,
     },
     name: {
       type: String,

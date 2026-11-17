@@ -237,7 +237,6 @@ const newsSchema = new Schema<TNewsDocument>(
   },
 );
 
-newsSchema.index({ slug: 1 }, { unique: true });
 newsSchema.index({ title: 1 });
 newsSchema.index({ status: 1 });
 newsSchema.index({ author: 1 });

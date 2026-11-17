@@ -96,8 +96,6 @@ const eventSchema = new Schema<TEventDocument>(
 );
 
 // Indexes
-eventSchema.index({ name: 1 }, { unique: true });
-eventSchema.index({ slug: 1 }, { unique: true });
 eventSchema.index({ category: 1 });
 eventSchema.index({ status: 1 });
 eventSchema.index({ is_featured: 1 });

@@ -15,7 +15,6 @@ const commentSchema = new Schema<TCommentDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Comment',
       default: null,
-      index: true,
     },
 
     reply_to_user: {
@@ -112,7 +111,6 @@ const commentSchema = new Schema<TCommentDocument>(
       type: String,
       enum: ['pending', 'approved', 'rejected', 'flagged'],
       default: 'approved',
-      index: true,
     },
 
     flagged_count: {

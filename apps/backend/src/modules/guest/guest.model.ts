@@ -14,7 +14,7 @@ const guestSchema = new Schema<TGuestDocument>(
       lowercase: true,
       trim: true,
     },
-    token: { type: String, required: true, unique: true, index: true },
+    token: { type: String, required: true, unique: true },
     session_id: { type: String }, // legacy: express-session id, no longer set
     ip_address: String,
     user_agent: String,
